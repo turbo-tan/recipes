@@ -36,12 +36,17 @@ reasoning-ON budget 256, temp 0, parallel 4.
 | MBPP+ pass@1       | **0.759** | 0.717 | 0.772 |
 | Hard86 (36K, raw)  | **76/86** | 69/86 | — |
 | MBPP wall time     | 6443s | 7070s | — |
-| Benchloop overall  | 71.2 (Q76.6 S54.0 R72.8) | — | — |
+| Benchloop overall (TOM prompt) | 76.0 (coding 100, toolcall 90) | — | — |
 | gen tok/s (benchloop) | 18.9 | — | — |
 
 v9a beats v8 on all four evalplus metrics (+5.8 to +9.8 pts), +7 Hard86,
-~9% faster MBPP, at +1.4 GiB. Trails UD-Q8 v3 by ~4 HumanEval pts while
-being ~13 GiB smaller.
+~9% faster MBPP, at +1.4 GiB.
+
+**v9a vs v3 same-harness benchloop (identical config):**
+v9a wins coding (100 vs 93.8) and toolcall (90 vs 85); v3 wins dataextract
+(91.6 vs 81.2) and instructfollow (75.6 vs 71.1); overall v3 +1.1.
+Profile: v9a = coding/agentic specialist; v3 = extraction/instruction generalist.
+For coding/agent serving, v9a is the correct choice.
 
 Artifacts: `.44:~/code/ai_workspace/artifacts/evalplus/v9a_512k_ctkq4_q38/`,
 Hard86 `.44:~/code/ai_workspace/artifacts/hard86/v9a_512k_ctkq4_q38/`,
