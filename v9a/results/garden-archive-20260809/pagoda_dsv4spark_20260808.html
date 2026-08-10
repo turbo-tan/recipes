@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cherry Pagoda Garden — voxel art</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;}
+  #c{display:block;width:100vw;height:100vh;cursor:grab;}
+  #fx{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;}
+  #ui{position:fixed;left:16px;bottom:16px;color:#fff;font:600 14px/1.6 system-ui,sans-serif;
+       text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;opacity:.9;z-index:3;}
+  #ui b{font-size:18px;letter-spacing:.5px;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<canvas id="fx"></canvas>
+<div id="ui"><b>&#127800; Pagoda Garden</b><br>drag to orbit &middot; scroll to zoom</div>
+<script>
+"use strict";
+// ================= world =================
+const W=80, H=48, D=80;
+const SH=16; // shift so the scene sits in the middle of the world
+const vox = new Uint8Array(W*H*D);
+const pal = [null];
+function P(r,g,b){ const i=pal.length; pal.push([r,g,b]); return i; }
+
+// palette
+const GRASS1=P(104,168,82), GRASS2=P(132,190,96), GRASS3=P(80,146,62);
+const DIRT=P(124,94,66);
+const STONE=P(176,172,170), STONE2=P(146,142,140), SLATE=P(112,112,120);
+const WATER=P(44,142,204), WATER2=P(30,120,192);
+const WOOD=P(152,112,82), WOODD=P(118,84,56);
+const ROOF=P(200,66,50), GOLD=P(232,182,74);
+const WALL=P(232,222,198);
+const TRUNK=P(98,66,44), LEAF=P(72,142,62), LEAF2=P(92,162,72);
+const BLOOM=P(236,132,162), BLOOM2=P(214,96,142), BLOSSOM=P(250,178,198), BLOSSOM2=P(255,224,232);
+const YFLOWER=P(238,206,60), WFLOWER=P(246,246,240), RFLOWER=P(234,70,82), PFLOWER=P(192,90,182);
+const LANTERN=P(255,172,60), SAND=P(214,190,142), LILYPAD=P(84,164,84);
+const WINDOW=P(250,214,140);
+
+function idx(x,y,z){ return (y*D+z)*W+x; }
+function setV(x,y,z,c){
+  x+=SH; z+=SH;
+  if(x<0||y<0||z<0||x>=W||y>=H||z>=D||c===0) return;
+  vox[idx(x,y,z)] = c;
+}
+function getV(x,y,z){
+  x+=SH; z+=SH;
+  if(x<0||y<0||z<0||x>=W||y>=H||z>=D) return 0;
+  return vox[idx(x,y,z)];
+}
+
+// ---------- hashing / noise ----------
+function hash2(x,z){
+  let h = (x*374761393 + z*668265263 + 1013904223) | 0;
+  h = Math.imul(h ^ (h>>>13), 1274126177);
+  h ^= h>>>16;
+  return ((h>>>0)/4294967295);
+}
+function n2(x,z){
+  const x0=Math.floor(x), z0=Math.floor(z);
+  const fx=x-x0, fz=z-z0;
+  const ux=fx*fx*(3-2*fx), uz=fz*fz*(3-2*fz);
+  const a=hash2(x0,z0), b=hash2(x0+1,z0), c=hash2(x0,z0+1), d=hash2(x0+1,z0+1);
+  return a*(1-ux)*(1-uz) + b*ux*(1-uz) + c*(1-ux)*uz + d*ux*uz;
+}
+function terrainH(x,z){
+  const v = n2(x*0.055,z*0.055)*0.9 + n2(x*0.15+25,z*0.15+9)*0.45 + n2(x*0.31+7,z*0.31+17)*0.25;
+  return 1 + Math.floor(v*2.4);
+}
+function groundH(x,z){
+  if(x>=17&&x<=31&&z>=17&&z<=31) return 1;
+  if(x>=23&&x<=25&&z>=3&&z<=31) return 1;
+  const dx=x-14, dz=z-33;
+  if(dx*dx+dz*dz <= 36) return 1;
+  return terrainH(x,z);
+}
+
+// ---------- build ----------
+// terrain — fill the whole world (scene sits in the middle)
+for(let x=0;x<W;x++) for(let z=0;z<D;z++){
+  const sx=x-SH, sz=z-SH;
+  const h=groundH(sx,sz);
+  for(let y=0;y<h;y++) setV(sx,y,sz, DIRT);
+  const dx=sx-14, dz=sz-33;
+  const isPond = dx*dx+dz*dz<=16;
+  let top;
+  if(isPond){ top = SAND; }
+  else{
+    const g = hash2(sx,sz);
+    top = g<0.4 ? GRASS1 : (g<0.75 ? GRASS2 : GRASS3);
+  }
+  setV(sx,h,sz, top);
+}
+// pond rim stones
+for(let x=0;x<W;x++) for(let z=0;z<D;z++){
+  const sx=x-SH, sz=z-SH;
+  const dx=sx-14, dz=sz-33;
+  const d2=dx*dx+dz*dz;
+  if(d2>16 && d2<=25){ setV(sx,1,sz, STONE); }
+}
+// water
+for(let x=0;x<W;x++) for(let z=0;z<D;z++){
+  const sx=x-SH, sz=z-SH;
+  const dx=sx-14, dz=sz-33;
+  if(dx*dx+dz*dz<=16){
+    setV(sx,2,sz, hash2(sx,sz)>0.5 ? WATER : WATER2);
+  }
+}
+// lily pads
+const pads=[[12,31],[15,35],[13,34],[16,32],[11,34]];
+for(const [px,pz] of pads){ setV(px,3,pz, LILYPAD); }
+// wooden bridge across the pond
+for(let x=9;x<=19;x++) setV(x,3,33, WOOD);
+setV(9,4,33, WOODD); setV(19,4,33, WOODD);
+
+// path (stone) from front edge to pagoda
+for(let z=3;z<=31;z++){
+  for(let x=23;x<=25;x++){
+    setV(x,1,z, STONE);
+  }
+}
+
+// platform under the pagoda (15x15, top at y=3)
+for(let x=17;x<=31;x++) for(let z=17;z<=31;z++){
+  setV(x,2,z, STONE2);
+  setV(x,3,z, STONE2);
+}
+// lighter path strip on platform
+for(let z=17;z<=31;z++) for(let x=23;x<=25;x++){
+  setV(x,3,z, STONE);
+}
+// stairs on front of platform (toward -z)
+for(let k=0;k<3;k++){
+  const zz=16-k, yy=3-k;
+  for(let x=23;x<=25;x++) setV(x,yy,zz, STONE);
+}
+
+// ---------- pagoda ----------
+const c=24;
+const tiers=[
+  {e:7, y1:3, y2:8,  ry:9 },
+  {e:6, y1:13,y2:16, ry:17},
+  {e:5, y1:21,y2:24, ry:25},
+  {e:4, y1:29,y2:32, ry:33},
+  {e:3, y1:37,y2:40, ry:41}
+];
+for(let t=0;t<tiers.length;t++){
+  const {e,y1,y2,ry}=tiers[t];
+  const lo=c-e, hi=c+e;
+
+  // walls
+  for(let y=y1;y<=y2;y++){
+    for(let x=lo;x<=hi;x++) for(let z=lo;z<=hi;z++){
+      const onEdge = (x===lo||x===hi||z===lo||z===hi);
+      if(!onEdge) continue;
+      const corner = (x===lo||x===hi)&&(z===lo||z===hi);
+      setV(x,y,z, corner ? WOODD : WALL);
+    }
+  }
+  // windows (two rows) on all four sides
+  const wy=[y1+1, y1+2];
+  const pos=[ c-Math.round(e*0.6), c, c+Math.round(e*0.6) ];
+  for(let y of wy) for(let p of pos){
+    if(p>lo && p<hi){
+      setV(p,y,lo, WINDOW); setV(p,y,hi, WINDOW);
+      setV(lo,y,p, WINDOW); setV(hi,y,p, WINDOW);
+    }
+  }
+  // door on the front of the lowest tier
+  if(t===0){
+    for(let y=3;y<=5;y++) setV(24,y,lo, 0);
+    setV(24,3,lo, WOODD); setV(24,4,lo, WOODD); setV(24,5,lo, WOODD);
+    setV(24,7,lo, RFLOWER); // banner
+  }
+
+  // roof: outer overhang ring
+  for(let x=lo-1;x<=hi+1;x++) for(let z=lo-1;z<=hi+1;z++){
+    const rim = (x===lo-1||x===hi+1||z===lo-1||z===hi+1);
+    if(rim) setV(x,ry,z, GOLD);
+  }
+  // main roof square
+  for(let x=lo;x<=hi;x++) for(let z=lo;z<=hi;z++){
+    setV(x,ry,z, ((x+z)&1) ? ROOF : GOLD);
+  }
+  // second layer (inner)
+  if(e>=2){
+    for(let x=lo+1;x<=hi-1;x++) for(let z=lo+1;z<=hi-1;z++){
+      setV(x,ry+1,z, ((x+z)&1) ? GOLD : ROOF);
+    }
+  }
+  // upturned corner pillars
+  const corners=[[lo-1,lo-1],[lo-1,hi+1],[hi+1,lo-1],[hi+1,hi+1]];
+  for(const [cx,cz] of corners){
+    setV(cx,ry+1,cz, ROOF);
+    setV(cx,ry+2,cz, GOLD);
+  }
+}
+
+// spire + ball
+for(let y=43;y<=46;y++) setV(24,y,24, GOLD);
+setV(24,47,24, GOLD);
+
+// lanterns at the four corners of the platform
+for(const [lx,lz] of [[17,17],[17,31],[31,17],[31,31]]){
+  setV(lx,3,lz, STONE); setV(lx,4,lz, STONE); setV(lx,5,lz, LANTERN);
+}
+
+// ---------- trees ----------
+function tree(x,z){
+  const gh = groundH(x,z);
+  const h = 2 + Math.floor(hash2(x,z)*3);        // 2..4
+  for(let y=1;y<=h;y++) setV(x,gh+y,z, TRUNK);
+  const cy = gh+h+1;
+  const r = 2 + Math.floor(hash2(x+7,z+3)*2);    // 2..3
+  for(let dx=-r;dx<=r;dx++) for(let dy=-r;dy<=r;dy++) for(let dz=-r;dz<=r;dz++){
+    const d2=dx*dx+dy*dy+dz*dz;
+    if(d2<=r*r+1 && hash2(x+dx*31+7,z+dz*17+5)<0.85){
+      const col = (dy>0 && d2>r*r) ? LEAF2 : LEAF;
+      setV(x+dx,cy+dy,z+dz, col);
+    }
+  }
+}
+function cherry(x,z){
+  const gh = groundH(x,z);
+  const h = 2 + Math.floor(hash2(x+3,z+11)*2);   // 2..3
+  for(let y=1;y<=h;y++) setV(x,gh+y,z, TRUNK);
+  const cy = gh+h+1;
+  const r = 3;
+  for(let dx=-r;dx<=r;dx++) for(let dy=-r;dy<=r;dy++) for(let dz=-r;dz<=r;dz++){
+    const d2=dx*dx+dy*dy+dz*dz;
+    if(d2<=r*r+1 && hash2(x+dx*13+3,z+dz*29+5)<0.92){
+      let col;
+      if(dy>0 && d2>r*r) col = BLOSSOM2;         // pale crown
+      else if(dy>1 && d2>r*r-2) col = BLOSSOM;   // light pink
+      else if(d2>r*r-1) col = BLOOM2;            // deeper pink rim
+      else col = BLOOM;
+      setV(x+dx,cy+dy,z+dz, col);
+    }
+  }
+}
+function bush(x,z){
+  const gh = groundH(x,z);
+  const r = 1 + Math.floor(hash2(x+5,z+9)*2);
+  for(let dx=-r;dx<=r;dx++) for(let dz=-r;dz<=r;dz++){
+    if(dx*dx+dz*dz<=r*r && hash2(x+dx,z+dz+3)<0.8){
+      setV(x+dx,gh+1,z+dz, LEAF2);
+      setV(x+dx,gh+2,z+dz, LEAF);
+    }
+  }
+}
+
+// cherry blossom trees
+const cherries=[[12,12],[34,12],[34,34],[12,34],[8,24],[40,24]];
+for(const [tx,tz] of cherries) cherry(tx,tz);
+// regular trees
+const trees=[[8,8],[38,8],[8,38],[38,38],[30,8],[8,30],[30,38],[38,30],[20,10],[28,10]];
+for(const [tx,tz] of trees) tree(tx,tz);
+
+// bushes scattered about
+const bushes=[[6,28],[42,28],[28,6],[28,42],[17,14],[31,14],[17,34],[31,34],[10,20],[38,20],[20,42],[42,20]];
+for(const [bx,bz] of bushes) bush(bx,bz);
+
+// flowers
+const flowers=[[26,6],[27,7],[26,8],[22,6],[23,7],[22,8],[6,26],[7,27],[8,26],[42,26],[43,27],[44,26],[26,42],[27,43],[26,44],[6,6],[42,42],[6,42],[42,6]];
+const fcolors=[YFLOWER,WFLOWER,RFLOWER,PFLOWER];
+for(const [fx,fz] of flowers){
+  setV(fx, groundH(fx,fz)+1, fz, fcolors[Math.floor(hash2(fx,fz)*4)]);
+}
+
+// rocks
+function rock(x,z,r){
+  const gh = groundH(x,z);
+  for(let dx=-r;dx<=r;dx++) for(let dy=0;dy<=r;dy++) for(let dz=-r;dz<=r;dz++){
+    if(dx*dx+dy*dy+dz*dz<=r*r){
+      setV(x+dx,gh+dy,z+dz, hash2(x+dx,z+dz)>0.5 ? SLATE : STONE2);
+    }
+  }
+}
+rock(8,33,2); rock(19,29,1); rock(29,19,1); rock(33,8,2); rock(8,8,1); rock(40,40,2);
+
+// small pavilion near the pond
+{
+  const px=34, pz=20;
+  const posts=[[32,18],[36,18],[32,22],[36,22]];
+  for(const [qx,qz] of posts){
+    for(let y=1;y<=4;y++) setV(qx,y,qz, WOODD);
+  }
+  for(let y=5;y<=6;y++){
+    const half = (y===5)?3:2;
+    for(let x=px-half;x<=px+half;x++) for(let z=pz-half;z<=pz+half;z++){
+      const rim=(x===px-half||x===px+half||z===pz-half||z===pz+half);
+      if(rim) setV(x,y,z, ((x+z)&1)?ROOF:GOLD);
+    }
+  }
+  setV(px,7,pz, GOLD); // tip
+}
+
+// path-side lanterns
+function lantern(x,z){
+  const gh = groundH(x,z);
+  setV(x,gh+1,z, STONE); setV(x,gh+2,z, STONE); setV(x,gh+3,z, LANTERN);
+}
+lantern(22,8); lantern(26,12); lantern(22,26); lantern(26,30);
+// stone garden lantern near pond
+setV(9,1,33,STONE); setV(9,2,33,STONE); setV(9,3,33,LANTERN);
+
+// ================= WebGL setup =================
+const canvas = document.getElementById('c');
+const fxC = document.getElementById('fx');
+const fxCtx = fxC.getContext('2d');
+const gl = canvas.getContext('webgl2', {antialias:false});
+if(!gl){
+  document.getElementById('ui').innerHTML = 'WebGL2 not supported';
+  throw new Error('WebGL2 required');
+}
+
+// upload voxel scene as a 3D texture
+// NOTE: the texture stores slices as (z*H + y)*W + x, while our vox array is (y*D + z)*W + x
+const texData = new Uint8Array(W*H*D*4);
+for(let y=0;y<H;y++){
+  for(let z=0;z<D;z++){
+    const src = (y*D+z)*W;
+    const dst = (z*H+y)*W;
+    for(let x=0;x<W;x++){
+      const ci = vox[src+x];
+      if(ci){
+        const col = pal[ci];
+        const o = (dst+x)*4;
+        texData[o]=col[0]; texData[o+1]=col[1]; texData[o+2]=col[2]; texData[o+3]=255;
+      }
+    }
+  }
+}
+const tex = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_3D, tex);
+gl.texImage3D(gl.TEXTURE_3D, 0, gl.RGBA8, W, H, D, 0, gl.RGBA, gl.UNSIGNED_BYTE, texData);
+gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+
+// shaders
+const vsrc = `#version 300 es
+in vec2 aPos;
+void main(){
+  gl_Position = vec4(aPos, 0.0, 1.0);
+}`;
+
+const fsrc = `#version 300 es
+precision highp float;
+precision highp sampler3D;
+uniform highp sampler3D uVox;
+uniform vec3 uCam;
+uniform vec3 uF;
+uniform vec3 uR;
+uniform vec3 uU;
+uniform vec2 uRes;
+uniform float uFov;
+out vec4 fragColor;
+
+const vec3 SUN = vec3(0.448, 0.846, 0.249); // normalized(0.45,0.85,0.25)
+
+void main(){
+  vec2 c = gl_FragCoord.xy;
+  float u = (c.x - uRes.x*0.5) / (uRes.y*0.5) * uFov;
+  float v = (c.y - uRes.y*0.5) / (uRes.y*0.5) * uFov;
+  vec3 rd = normalize(uF + uR*u + uU*v);
+
+  vec3 ro = uCam;
+  vec3 inv = 1.0/rd;
+  vec3 t0 = -ro*inv;
+  vec3 t1 = (vec3(80.0, 48.0, 80.0) - ro)*inv;
+  vec3 tmin = min(t0,t1);
+  vec3 tmax = max(t0,t1);
+  float tNear = max(max(tmin.x,tmin.y),tmin.z);
+  float tFar  = min(min(tmax.x,tmax.y),tmax.z);
+
+  vec3 outCol;
+  bool hit = false;
+
+  if(tFar > 0.0 && tNear <= tFar){
+    vec3 pos = ro + rd*max(tNear,0.0);
+    ivec3 cell = ivec3(floor(pos));
+    ivec3 iStep = ivec3(round(sign(rd)));
+    vec3 tDelta = abs(vec3(1.0)/rd);
+    vec3 tMax = (vec3(iStep)*(vec3(cell)-pos) + (vec3(iStep)*0.5+0.5)) * tDelta;
+    float t = max(tNear,0.0);
+    vec3 n = vec3(0.0);
+
+    for(int i=0;i<400;i++){
+      vec4 vox = texelFetch(uVox, cell, 0);
+      if(vox.a > 0.5){
+        hit = true;
+        float diff = max(dot(n,SUN),0.0);
+        float b = 0.30 + 0.70*diff;
+        vec3 col = vox.rgb * b;
+        float f = clamp((t - 45.0)/40.0, 0.0, 0.35);
+        outCol = mix(col, vec3(0.58,0.70,0.80), f);
+        break;
+      }
+      if(tMax.x < tMax.y && tMax.x < tMax.z){
+        cell.x += iStep.x;
+        t = tMax.x;
+        tMax.x += tDelta.x;
+        n = vec3(-float(iStep.x), 0.0, 0.0);
+      } else if(tMax.y < tMax.z){
+        cell.y += iStep.y;
+        t = tMax.y;
+        tMax.y += tDelta.y;
+        n = vec3(0.0, -float(iStep.y), 0.0);
+      } else {
+        cell.z += iStep.z;
+        t = tMax.z;
+        tMax.z += tDelta.z;
+        n = vec3(0.0, 0.0, -float(iStep.z));
+      }
+      if(t >= tFar) break;
+    }
+  }
+
+  if(!hit){
+    float h = clamp(rd.y, 0.0, 1.0);
+    vec3 sky = mix(vec3(0.52,0.68,0.82), vec3(0.30,0.44,0.72), h);
+    float sg = max(dot(rd,SUN),0.0);
+    sky += vec3(0.32,0.26,0.18)*pow(sg,4.0);
+    outCol = sky;
+  }
+
+  fragColor = vec4(outCol, 1.0);
+}`;
+
+function compile(type, src){
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+    console.error(gl.getShaderInfoLog(s));
+    throw new Error('shader compile error');
+  }
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(gl.VERTEX_SHADER, vsrc));
+gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fsrc));
+gl.linkProgram(prog);
+if(!gl.getProgramParameter(prog, gl.LINK_STATUS)){
+  throw new Error('program link error');
+}
+gl.useProgram(prog);
+
+// fullscreen quad
+const vbo = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+const vao = gl.createVertexArray();
+gl.bindVertexArray(vao);
+const aPos = gl.getAttribLocation(prog, 'aPos');
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+const uLocCam = gl.getUniformLocation(prog, 'uCam');
+const uLocF  = gl.getUniformLocation(prog, 'uF');
+const uLocR  = gl.getUniformLocation(prog, 'uR');
+const uLocU  = gl.getUniformLocation(prog, 'uU');
+const uLocRes= gl.getUniformLocation(prog, 'uRes');
+const uLocFov= gl.getUniformLocation(prog, 'uFov');
+
+// ================= camera =================
+const cam = { az:0.55, el:0.50, r:30, tx:24, ty:24, tz:24 };
+const fov = 1.45;
+
+function getCam(){
+  const px = cam.tx + cam.r*Math.cos(cam.el)*Math.sin(cam.az);
+  const py = cam.ty + cam.r*Math.sin(cam.el);
+  const pz = cam.tz + cam.r*Math.cos(cam.el)*Math.cos(cam.az);
+  let fx = cam.tx-px, fy = cam.ty-py, fz = cam.tz-pz;
+  const fl = Math.sqrt(fx*fx+fy*fy+fz*fz);
+  fx/=fl; fy/=fl; fz/=fl;
+  let rx = -fz, ry = 0, rz = fx;
+  const rl = Math.sqrt(rx*rx+ry*ry+rz*rz); rx/=rl; ry/=rl; rz/=rl;
+  let ux = ry*fz - rz*fy, uy = rz*fx - rx*fz, uz = rx*fy - ry*fx;
+  const ul = Math.sqrt(ux*ux+uy*uy+uz*uz); ux/=ul; uy/=ul; uz/=ul;
+  return {px,py,pz,fx,fy,fz,rx,ry,rz,ux,uy,uz};
+}
+
+function render(c){
+  const w = canvas.width, h = canvas.height;
+  gl.viewport(0,0,w,h);
+  gl.clearColor(0.3,0.45,0.72,1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(prog);
+  gl.uniform3f(uLocCam, c.px+SH, c.py, c.pz+SH);
+  gl.uniform3f(uLocF, c.fx, c.fy, c.fz);
+  gl.uniform3f(uLocR, c.rx, c.ry, c.rz);
+  gl.uniform3f(uLocU, c.ux, c.uy, c.uz);
+  gl.uniform2f(uLocRes, w, h);
+  gl.uniform1f(uLocFov, fov);
+  gl.bindVertexArray(vao);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+// ================= petals =================
+const parts=[];
+const cherrySpots=[[12,12],[34,12],[34,34],[12,34],[8,24],[40,24]];
+const pcols=[BLOOM,BLOOM2,BLOSSOM,BLOSSOM2];
+for(let i=0;i<300;i++){
+  const s=cherrySpots[i%cherrySpots.length];
+  parts.push({
+    x: s[0]+(Math.random()-0.5)*3,
+    y: 9+(Math.random()*4),
+    z: s[1]+(Math.random()-0.5)*3,
+    vy: 0.5+Math.random()*0.8,
+    drift: Math.random()*Math.PI*2,
+    col: pcols[i%4]
+  });
+}
+function updateParts(dt, now){
+  for(const p of parts){
+    p.y -= p.vy*dt;
+    p.x += Math.sin(now*0.001 + p.drift)*0.25*dt;
+    p.z += Math.cos(now*0.0013 + p.drift)*0.2*dt;
+    const gh = groundH(Math.floor(p.x), Math.floor(p.z));
+    if(p.y < gh+1){
+      const s = cherrySpots[Math.floor(Math.random()*cherrySpots.length)];
+      p.x = s[0]+(Math.random()-0.5)*3;
+      p.y = 8+Math.random()*5;
+      p.z = s[1]+(Math.random()-0.5)*3;
+      p.vy = 0.5+Math.random()*0.8;
+    }
+  }
+}
+function drawPets(c){
+  const w = fxC.width, h = fxC.height;
+  fxCtx.clearRect(0,0,w,h);
+  const {px,py,pz,fx,fy,fz,rx,ry,rz,ux,uy,uz} = c;
+  for(const p of parts){
+    const ox=p.x-px, oy=p.y-py, oz=p.z-pz;
+    const zc = ox*fx + oy*fy + oz*fz;
+    if(zc < 0.5 || zc > 85) continue;
+    const xc = ox*rx + oy*ry + oz*rz;
+    const yc = ox*ux + oy*uy + oz*uz;
+    const u = xc/zc, v = yc/zc;
+    const sx = w/2 + u*(h/2)*fov;
+    const sy = h/2 - v*(h/2)*fov;
+    if(sx<0||sy<0||sx>=w||sy>=h) continue;
+    const c2 = p.col;
+    fxCtx.fillStyle = 'rgba('+c2[0]+','+c2[1]+','+c2[2]+',0.75)';
+    fxCtx.fillRect(sx, sy, 1, 1);
+  }
+}
+
+// ================= loop & input =================
+function resize(){
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.max(2, Math.floor(window.innerWidth*dpr));
+  const h = Math.max(2, Math.floor(window.innerHeight*dpr));
+  canvas.width = w; canvas.height = h;
+  canvas.style.width = window.innerWidth+'px';
+  canvas.style.height = window.innerHeight+'px';
+  fxC.width = w; fxC.height = h;
+  fxC.style.width = window.innerWidth+'px';
+  fxC.style.height = window.innerHeight+'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+let dragging=false, lastX=0, lastY=0;
+canvas.addEventListener('mousedown', e=>{ dragging=true; lastX=e.clientX; lastY=e.clientY; });
+window.addEventListener('mousemove', e=>{
+  if(!dragging) return;
+  const dx = e.clientX-lastX, dy = e.clientY-lastY;
+  lastX=e.clientX; lastY=e.clientY;
+  cam.az -= dx*0.005;
+  cam.el += dy*0.004;
+  cam.el = Math.max(0.15, Math.min(1.35, cam.el));
+});
+window.addEventListener('mouseup', ()=>{ dragging=false; });
+canvas.addEventListener('wheel', e=>{
+  e.preventDefault();
+  cam.r += e.deltaY*0.02;
+  cam.r = Math.max(10, Math.min(70, cam.r));
+}, {passive:false});
+canvas.addEventListener('touchstart', e=>{
+  const t=e.touches[0]; lastX=t.clientX; lastY=t.clientY; dragging=true;
+}, {passive:true});
+canvas.addEventListener('touchmove', e=>{
+  if(!dragging) return;
+  const t=e.touches[0];
+  const dx=t.clientX-lastX, dy=t.clientY-lastY;
+  lastX=t.clientX; lastY=t.clientY;
+  cam.az -= dx*0.005; cam.el += dy*0.004;
+  cam.el = Math.max(0.15, Math.min(1.35, cam.el));
+}, {passive:true});
+canvas.addEventListener('touchend', ()=>{ dragging=false; });
+
+let last=performance.now();
+function frame(now){
+  const dt = Math.min(0.05,(now-last)/1000); last=now;
+  if(!dragging){ cam.az += dt*0.10; }
+  const c = getCam();
+  render(c);
+  updateParts(dt, now);
+  drawPets(c);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

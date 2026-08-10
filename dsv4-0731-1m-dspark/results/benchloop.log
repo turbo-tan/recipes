@@ -1,0 +1,33 @@
+╔══════════════════════════════════════════════════════╗
+║  ⚡ BENCHLOOP · local LLM benchmarking v0.2.3         ║
+╚══════════════════════════════════════════════════════╝
+
+  ◉ MODEL      deepseek-v4-flash-0731
+  ◉ HARNESS    raw (openai_compat)
+  ◉ MACHINE    2x DGX Spark GB10 (DSpark 1M)
+  ◉ GEN TOK/S  39.22
+
+
+─── Suite Results ─────────────────────────────────────
+
+  speed             66.5   9/9   3651ms ⚠️
+  toolcall          83.3 12/15   1480ms ✅
+  coding           100.0 12/12   8353ms ✅
+  dataextract       91.9 12/15   2588ms ✅
+  instructfollow    72.2  9/15   1029ms ⚠️
+  reasonmath        73.3 11/15   1832ms ⚠️
+
+═══ Summary ═══════════════════════════════════════════
+
+  QUALITY       │  84.2
+  SPEED         │  66.5
+  RELIABILITY   │  80.2
+  VALUE         │  26.5
+  ────────────────────────
+  OVERALL       │  79.7  ⚠️
+
+  Runtime: 346.4s
+
+Saved results to 
+/home/awee/.bench-loop/runs/20260809-082043-deepseek-v4-flash-0731-local-openai_
+compat/run.json

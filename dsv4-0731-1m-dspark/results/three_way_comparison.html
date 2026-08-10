@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepSeek-V4-Flash-0731 · Native 1M vs TQ3_4S v9a vs v3 — three-way benchmark</title>
+<style>
+  :root{--bg:#0a0e1a;--card:#111827;--edge:#1e293b;--txt:#e2e8f0;--dim:#94a3b8;--acc:#38bdf8;--gold:#fbbf24;--grn:#34d399;--red:#f87171;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;padding:32px 20px;line-height:1.5}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:26px;font-weight:700;letter-spacing:-0.5px}
+  h1 span{color:var(--acc)}
+  .sub{color:var(--dim);margin:8px 0 24px;font-size:14px}
+  .tag{display:inline-block;background:var(--edge);border:1px solid #334155;border-radius:20px;padding:4px 14px;font-size:12px;color:var(--acc);margin-bottom:12px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0}
+  .card{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:18px}
+  .card.win{border-color:var(--gold);box-shadow:0 0 18px rgba(251,191,36,.12)}
+  .card h3{font-size:14px;color:var(--dim);font-weight:600}
+  .card .big{font-size:30px;font-weight:800;margin:6px 0 2px}
+  .card .det{font-size:12px;color:var(--dim)}
+  .sec{display:flex;align-items:center;gap:12px;margin:34px 0 14px}
+  .sec .no{color:var(--acc);font-weight:800;font-size:13px}
+  .sec h2{font-size:19px}
+  .sec .rule{flex:1;height:1px;background:var(--edge)}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;font-size:13.5px}
+  th,td{padding:10px 14px;text-align:center;border-bottom:1px solid var(--edge)}
+  th{background:#0d1526;color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  th:first-child,td:first-child{text-align:left}
+  tr:last-child td{border-bottom:none}
+  .best{color:var(--gold);font-weight:700}
+  .good{color:var(--grn)}
+  .bad{color:var(--red)}
+  .note{background:#0d1526;border-left:3px solid var(--acc);border-radius:0 8px 8px 0;padding:12px 16px;font-size:13px;color:var(--dim);margin:14px 0}
+  .note b{color:var(--txt)}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--edge);display:flex;justify-content:space-between;color:var(--dim);font-size:12px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .pill.nat{background:rgba(56,189,248,.15);color:var(--acc)}
+  .pill.v9{background:rgba(251,191,36,.15);color:var(--gold)}
+  .pill.v3{background:rgba(52,211,153,.15);color:var(--grn)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tag">DeepSeek-V4-Flash-0731 · three-way bench · 2026-08-09 · ALL FAIR (thinking-ON)</div>
+  <h1>Native <span>1M context</span> vs TQ3_4S v9a vs TQ3_4S v3</h1>
+  <p class="sub">DeepSeek-V4-Flash-0731 (284B / 13B active MoE). Native weights served via vLLM DSpark on 2× DGX Spark at 1M context, against the two TQ3_4S GGUF quants served at 512K on a single Spark. Same client harness throughout (evalplus official scorer, Hard86, benchloop raw openai_compat). All numbers measured with reasoning ON, temp 0, TOM system prompt, parallel 4.</p>
+
+  <div class="grid">
+    <div class="card win">
+      <h3><span class="pill nat">NATIVE</span> 0731 · 1M ctx</h3>
+      <div class="big">78.7</div>
+      <div class="det">benchloop overall · 51.2 gen tok/s · 28.3 decode tok/s · 2× Spark TP=2 + MTP spec decode</div>
+    </div>
+    <div class="card">
+      <h3><span class="pill v3">v3</span> TQ3_4S · 512K ctx</h3>
+      <div class="big">77.1</div>
+      <div class="det">benchloop overall · 21.4 tok/s · 1× Spark · UD-imatrix recipe</div>
+    </div>
+    <div class="card">
+      <h3><span class="pill v9">v9a</span> TQ3_4S · 512K ctx</h3>
+      <div class="big">76.0</div>
+      <div class="det">benchloop overall · 18.8 tok/s · 1× Spark · IQ2_S experts (champion quant)</div>
+    </div>
+  </div>
+
+  <div class="sec"><span class="no">01</span><h2>Coding — evalplus (greedy, official scorer, thinking ON)</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Metric</th><th><span class="pill nat">native 1M</span></th><th><span class="pill v9">v9a</span></th><th><span class="pill v3">v3</span></th><th>best</th></tr>
+    <tr><td>HumanEval pass@1 (164)</td><td class="best">98.8</td><td>90.9</td><td>94.5</td><td><span class="pill nat">native</span></td></tr>
+    <tr><td>HumanEval+ pass@1 (~80× tests)</td><td class="best">95.1</td><td>86.6</td><td>90.9</td><td><span class="pill nat">native</span></td></tr>
+    <tr><td>MBPP pass@1 (378)</td><td class="best">95.8</td><td>92.6</td><td>91.8</td><td><span class="pill nat">native</span></td></tr>
+    <tr><td>MBPP+ pass@1 (~35× tests)</td><td class="best">81.0</td><td>75.9</td><td>77.2</td><td><span class="pill nat">native</span></td></tr>
+  </table>
+  <div class="note">With reasoning ON for all three, <b>native 1M dominates evalplus</b>: +8.5 HE+ over v9a, +5.1 MBPP+ over v9a, +4.2 HE+ over v3. The earlier thinking-OFF native numbers (89.0 HE+ / 78.3 MBPP+) were a handicap — the fair re-run with thinking ON shows the model's true coding strength. v9a's expert-precision recipe still keeps it within 8–9pp of native on the hard + suites at −65 GB.</div>
+
+  <div class="sec"><span class="no">02</span><h2>Hard86 — 86 assertions (thinking ON, temp 0, TOM)</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Metric</th><th><span class="pill nat">native 1M</span></th><th><span class="pill v9">v9a</span></th><th><span class="pill v3">v3</span></th><th>best</th></tr>
+    <tr><td>Hard86 score</td><td>72/86</td><td class="best">76/86</td><td>70/86</td><td><span class="pill v9">v9a</span></td></tr>
+    <tr><td>Compile failures</td><td class="best">0</td><td class="best">0</td><td class="best">0</td><td>—</td></tr>
+  </table>
+  <div class="note">v9a leads by 4 tasks. Caveat: v9a's recorded 76/86 used the older <b>run_hard86_bench.py</b> harness (max_tokens 5000) while the native fair run used <b>run_hard86_dspark.py</b> (max_tokens 16384). Both temp 0 + TOM. Hard86 is temp&gt;0 scoring with ±3 task run-to-run noise, so the gap is within instrument resolution. A v9a re-run on the identical dspark harness would close this cell.</div>
+
+  <div class="sec"><span class="no">03</span><h2>Benchloop suites — raw openai_compat (thinking ON)</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Suite</th><th><span class="pill nat">native 1M</span></th><th><span class="pill v9">v9a</span></th><th><span class="pill v3">v3</span></th></tr>
+    <tr><td><b>Overall</b></td><td class="best">78.7</td><td>76.0</td><td>77.1</td></tr>
+    <tr><td>Quality</td><td class="best">84.4</td><td>83.1</td><td>83.8</td></tr>
+    <tr><td>speed suite</td><td class="best">71.9</td><td>54.0</td><td>56.3</td></tr>
+    <tr><td>toolcall</td><td class="best">90.0</td><td class="best">90.0</td><td>85.0</td></tr>
+    <tr><td>coding</td><td class="best">100.0</td><td class="best">100.0</td><td>93.8</td></tr>
+    <tr><td>dataextract</td><td>80.8</td><td>81.2</td><td class="best">91.6</td></tr>
+    <tr><td>instructfollow</td><td class="best">77.8</td><td>71.1</td><td>75.6</td></tr>
+    <tr><td>reasonmath</td><td class="best">73.3</td><td class="best">73.3</td><td class="best">73.3</td></tr>
+  </table>
+  <div class="note">Native 1M fair benchloop: overall 78.7, reliability 71.6, value 30.9, runtime 910.8s. The speed suite jump (66.5 → 71.9) reflects the thinking-ON re-run. v3 keeps its dataextract lead (91.6 vs 80.8/81.2).</div>
+
+  <div class="sec"><span class="no">04</span><h2>Throughput</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Metric</th><th><span class="pill nat">native 1M</span></th><th><span class="pill v9">v9a</span></th><th><span class="pill v3">v3</span></th></tr>
+    <tr><td>Decode tok/s (single request, thinking off)</td><td class="best">28.3</td><td>18.8</td><td>21.4</td></tr>
+    <tr><td>GEN TOK/S (benchloop, spec decode)</td><td class="best">51.2</td><td>18.9</td><td>21.4</td></tr>
+    <tr><td>Topology</td><td>2× GB10, TP=2, MTP draft-n=5</td><td>1× GB10</td><td>1× GB10</td></tr>
+    <tr><td>Context served</td><td class="best">1,048,576</td><td>524,288</td><td>524,288</td></tr>
+  </table>
+  <div class="note">2× Spark + MTP speculative decode gives 51.2 gen tok/s under benchloop (2.4× v3, 2.7× v9a). Raw single-request decode is 28.3 tok/s thinking-off. Native 1M is the only config serving the model's full YaRN 1M window.</div>
+
+  <div class="sec"><span class="no">05</span><h2>Perplexity — wikitext-2 · ctx 512 · 60 chunks</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Model</th><th>Instrument</th><th>PPL</th><th>Δ vs v3</th></tr>
+    <tr><td><span class="pill v3">v3</span> TQ3_4S (published ref)</td><td>llama-perplexity GGUF</td><td class="best">5.9839</td><td>—</td></tr>
+    <tr><td><span class="pill v9">v9a</span> TQ3_4S</td><td>llama-perplexity GGUF</td><td>6.2788 ± 0.143</td><td class="bad">+4.93%</td></tr>
+    <tr><td><span class="pill nat">native 1M</span> 0731</td><td>vLLM prompt_logprobs</td><td>6.1906</td><td class="bad">+3.5% (diff instrument)</td></tr>
+  </table>
+  <div class="note">v3/v9a measured with identical llama-perplexity instrument (wikitext-2 wiki.test.raw, ctx 512, 60 chunks, q8_0 K-cache) on .55 with all v9a servers stopped. Native 1M PPL measured via vLLM /v1/completions prompt_logprobs — <b>different instrument, comparable in trend only</b>. v9a's +4.9% PPL cost mirrors v8's pattern: PPL rises the quants pay are largely invisible to evalplus/Hard86.</div>
+
+  <div class="sec"><span class="no">06</span><h2>Garden prompt (voxel pagoda, single HTML)</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Run</th><th>Config</th><th>Wall</th><th>Reasoning</th><th>Output</th></tr>
+    <tr><td>native 1M · thinking-off</td><td>temp 1.0 / top_p 0.95, 32K max</td><td>81s</td><td>0 chars</td><td>16.0 KB HTML</td></tr>
+    <tr><td>native 1M · thinking-on effort=max</td><td>reasoning_effort: max, 32K max</td><td>653s</td><td>104,614 chars</td><td class="bad">0 KB (budget exhausted on thinking)</td></tr>
+    <tr><td><b>native 1M · thinking-on effort=high</b></td><td>reasoning_effort: high, 64K max</td><td>287s</td><td>38,949 chars</td><td class="best">23.3 KB HTML</td></tr>
+    <tr><td>v9a + DSpark drafter · pi · budget 81920</td><td>reasoning on, thinking max</td><td>—</td><td>—</td><td>29.4 KB HTML</td></tr>
+  </table>
+  <div class="note">The effort=max run consumed all 32K tokens on pure reasoning (104K chars) without ever writing HTML — the model was still deliberating when it hit the cap. Switching to effort=high with a 64K budget produced 23.3 KB of HTML in 287s with 38.9K chars of reasoning. All prior outputs archived under <b>recipes/v9a/results/garden-archive-20260809/</b> before the new runs.</div>
+
+  <div class="sec"><span class="no">07</span><h2>Local 3090 deployment (bonus)</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Config</th><th>tok/s</th><th>Context</th><th>Note</th></tr>
+    <tr><td>v9a on 3090 + 125GB RAM (experts-on-CPU)</td><td>14.1</td><td class="best">1,048,576</td><td>-ngl 44 --n-cpu-moe 39 --load-mode mmap+mlock -ctk q4_0</td></tr>
+    <tr><td>+ DSpark drafter (CPU)</td><td class="bad">10.8</td><td>1M</td><td>acceptance 0.43 — net loss</td></tr>
+    <tr><td>+ ngram-simple</td><td>14.1</td><td>1M</td><td>neutral</td></tr>
+  </table>
+  <div class="note">Single 3090 + 125 GB DDR4 box. Bottleneck is DDR4 bandwidth on CPU expert matmuls (63% of decode time in iq2_S/q2_K dot products). 25 tok/s requires DDR5-class memory or a second GPU. Published as llm-launch profile <b>local-3090-v9a-1m</b>.</div>
+
+  <div class="sec"><span class="no">08</span><h2>Verdict</h2><span class="rule"></span></div>
+  <div class="note" style="border-left-color:var(--gold)">
+    <b>Native 1M wins overall</b> (78.7 vs 77.1/76.0) with 2.4× decode speed and 2× the context — but it takes both Sparks and 156 GB. With reasoning ON for all three, native dominates evalplus decisively (+8.5 HE+, +5.1 MBPP+ over v9a). <b>v9a remains the champion single-box quant</b>: tops Hard86, within 8–9pp of native on the hard evalplus suites at −65 GB and on one machine. <b>v3 is the quality ceiling</b> for quants (+2–4pp evalplus over v9a) at +12 GB. Serving rule of thumb: coding/agent serving on one Spark → v9a; long-context or max throughput with 2 Sparks available → native 1M.
+  </div>
+
+  <footer>
+    <div>DeepSeek-V4-Flash-0731 · native vs TQ3_4S three-way · evalplus official scorer · Hard86 · benchloop (no submit) · all thinking-ON</div>
+    <div>2026-08-09 · turbo-tan/recipes</div>
+  </footer>
+</div>
+</body>
+</html>

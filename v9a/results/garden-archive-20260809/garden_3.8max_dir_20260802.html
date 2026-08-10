@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voxel Pagoda · Cherry Blossom Garden</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0b1a2a;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #f0e6d2;
+            background: rgba(20, 30, 40, 0.7);
+            padding: 8px 18px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+            font-size: 14px;
+            letter-spacing: 1px;
+            border: 1px solid #b8a88a;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            pointer-events: none;
+            z-index: 100;
+        }
+        #info span {
+            color: #ffb7c5;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">🌸 <span>VOXEL PAGODA</span> · cherry blossom garden 🌸</div>
+
+    <!-- three.js and orbit controls from CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ---------- SETUP ----------
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb); // soft sky
+        
+        // subtle fog for depth
+        scene.fog = new THREE.Fog(0x87ceeb, 40, 100);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(15, 12, 22);
+        camera.lookAt(0, 4, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.8;
+        controls.target.set(0, 5, 0);
+        controls.maxPolarAngle = Math.PI / 2.3;
+
+        // ---------- LIGHTING ----------
+        // ambient
+        const ambient = new THREE.AmbientLight(0x404060);
+        scene.add(ambient);
+
+        // main directional light (sun)
+        const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
+        sunLight.position.set(10, 20, 5);
+        sunLight.castShadow = true;
+        sunLight.receiveShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        const d = 25;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 50;
+        scene.add(sunLight);
+
+        // fill light with a hint of pink
+        const fillLight = new THREE.PointLight(0xffb0c8, 0.5);
+        fillLight.position.set(-5, 8, 10);
+        scene.add(fillLight);
+
+        // back light
+        const backLight = new THREE.PointLight(0xaaccff, 0.4);
+        backLight.position.set(-2, 4, -12);
+        scene.add(backLight);
+
+        // ---------- UTILS ----------
+        // simple voxel box (colored, with slight bevel? no, just cube)
+        function voxel(color, size = 1, pos = [0,0,0], castShadow = true) {
+            const geo = new THREE.BoxGeometry(size, size, size);
+            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4, metalness: 0.1 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(pos[0], pos[1] + size/2, pos[2]); // pivot at bottom
+            mesh.castShadow = castShadow;
+            mesh.receiveShadow = true;
+            return mesh;
+        }
+
+        // add a group of voxels easily
+        function addVoxelGroup(group, color, positions, size = 1) {
+            positions.forEach(p => {
+                const box = voxel(color, size, p);
+                group.add(box);
+            });
+        }
+
+        // ---------- GROUND & GARDEN ----------
+        const groundGroup = new THREE.Group();
+
+        // base grass plane (voxel style: big green blocks)
+        const grassMat = new THREE.MeshStandardMaterial({ color: 0x5a9e4e, roughness: 0.7 });
+        for (let ix = -8; ix <= 8; ix++) {
+            for (let iz = -8; iz <= 8; iz++) {
+                const block = new THREE.Mesh(new THREE.BoxGeometry(1, 0.8, 1), grassMat);
+                block.position.set(ix, -0.4, iz);
+                block.receiveShadow = true;
+                block.castShadow = false;
+                groundGroup.add(block);
+            }
+        }
+
+        // add some darker grass patches
+        const darkGrassMat = new THREE.MeshStandardMaterial({ color: 0x3e7a3a, roughness: 0.8 });
+        const patchPositions = [[-3, -2], [4, 3], [-5, 5], [6, -4], [2, -6], [-6, -5], [0, 7], [7, 1]];
+        patchPositions.forEach(([x, z]) => {
+            const patch = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.2, 1.2), darkGrassMat);
+            patch.position.set(x, 0.0, z);
+            patch.receiveShadow = true;
+            groundGroup.add(patch);
+        });
+
+        // flower dots (tiny voxels)
+        const flowerColors = [0xff69b4, 0xffa07a, 0xffd700, 0xffb6c1, 0xff8c69];
+        for (let i = 0; i < 80; i++) {
+            const x = (Math.random() - 0.5) * 16;
+            const z = (Math.random() - 0.5) * 16;
+            // skip if too close to pagoda base
+            if (Math.abs(x) < 2.5 && Math.abs(z) < 2.5) continue;
+            const col = flowerColors[Math.floor(Math.random() * flowerColors.length)];
+            const flower = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.2 }));
+            flower.position.set(x, 0.15, z);
+            flower.castShadow = true;
+            groundGroup.add(flower);
+        }
+
+        // stone path (gray voxels)
+        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x9a8f80, roughness: 0.9 });
+        for (let i = -3; i <= 3; i++) {
+            const stone = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.2, 1.2), stoneMat);
+            stone.position.set(i * 1.0, 0.05, 0);
+            stone.receiveShadow = true;
+            groundGroup.add(stone);
+        }
+
+        scene.add(groundGroup);
+
+        // ---------- PAGODA (elaborate, multi-tier) ----------
+        const pagodaGroup = new THREE.Group();
+        const roofColors = [0xb5443c, 0x8e2f2a, 0x6e1f1a]; // deep reds
+        const wallColors = [0xf5e6d3, 0xe8d5b7, 0xd4b896]; // cream/wood
+
+        // central pillar (wood)
+        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.5 });
+        const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.8, 8.0, 1.8), pillarMat);
+        pillar.position.set(0, 4.0, 0);
+        pillar.castShadow = true;
+        pillar.receiveShadow = true;
+        pagodaGroup.add(pillar);
+
+        // tier 1 (base) – wider
+        const tier1Base = new THREE.BoxGeometry(4.5, 1.2, 4.5);
+        const tier1Mat = new THREE.MeshStandardMaterial({ color: wallColors[0] });
+        const tier1 = new THREE.Mesh(tier1Base, tier1Mat);
+        tier1.position.set(0, 1.2, 0);
+        tier1.castShadow = true;
+        tier1.receiveShadow = true;
+        pagodaGroup.add(tier1);
+
+        // roof 1 (curved effect via stacked voxels)
+        const roof1Pos = [
+            [0, 2.0, 0], [0.8, 2.2, 0], [-0.8, 2.2, 0], [0, 2.2, 0.8], [0, 2.2, -0.8],
+            [1.2, 2.4, 0.4], [1.2, 2.4, -0.4], [-1.2, 2.4, 0.4], [-1.2, 2.4, -0.4],
+            [0.4, 2.4, 1.2], [-0.4, 2.4, 1.2], [0.4, 2.4, -1.2], [-0.4, 2.4, -1.2],
+            [0, 2.6, 0], [0.6, 2.8, 0.6], [-0.6, 2.8, 0.6], [0.6, 2.8, -0.6], [-0.6, 2.8, -0.6],
+            [0, 3.0, 0]
+        ];
+        addVoxelGroup(pagodaGroup, roofColors[0], roof1Pos, 0.9);
+
+        // tier 2
+        const tier2Mat = new THREE.MeshStandardMaterial({ color: wallColors[1] });
+        const tier2 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.0, 3.2), tier2Mat);
+        tier2.position.set(0, 3.2, 0);
+        tier2.castShadow = true;
+        tier2.receiveShadow = true;
+        pagodaGroup.add(tier2);
+
+        // roof 2
+        const roof2Pos = [
+            [0, 4.0, 0], [0.7, 4.2, 0], [-0.7, 4.2, 0], [0, 4.2, 0.7], [0, 4.2, -0.7],
+            [1.0, 4.4, 0.3], [1.0, 4.4, -0.3], [-1.0, 4.4, 0.3], [-1.0, 4.4, -0.3],
+            [0.3, 4.4, 1.0], [-0.3, 4.4, 1.0], [0.3, 4.4, -1.0], [-0.3, 4.4, -1.0],
+            [0, 4.6, 0], [0.5, 4.8, 0.5], [-0.5, 4.8, 0.5], [0.5, 4.8, -0.5], [-0.5, 4.8, -0.5],
+            [0, 5.0, 0]
+        ];
+        addVoxelGroup(pagodaGroup, roofColors[1], roof2Pos, 0.8);
+
+        // tier 3 (top)
+        const tier3Mat = new THREE.MeshStandardMaterial({ color: wallColors[2] });
+        const tier3 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 2.2), tier3Mat);
+        tier3.position.set(0, 5.2, 0);
+        tier3.castShadow = true;
+        tier3.receiveShadow = true;
+        pagodaGroup.add(tier3);
+
+        // roof 3 (top spire)
+        const roof3Pos = [
+            [0, 6.2, 0], [0.6, 6.4, 0], [-0.6, 6.4, 0], [0, 6.4, 0.6], [0, 6.4, -0.6],
+            [0.8, 6.6, 0.2], [0.8, 6.6, -0.2], [-0.8, 6.6, 0.2], [-0.8, 6.6, -0.2],
+            [0.2, 6.6, 0.8], [-0.2, 6.6, 0.8], [0.2, 6.6, -0.8], [-0.2, 6.6, -0.8],
+            [0, 6.9, 0], [0.3, 7.1, 0.3], [-0.3, 7.1, 0.3], [0.3, 7.1, -0.3], [-0.3, 7.1, -0.3],
+            [0, 7.4, 0]
+        ];
+        addVoxelGroup(pagodaGroup, roofColors[2], roof3Pos, 0.7);
+
+        // golden spire
+        const spireMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xaa5500, emissiveIntensity: 0.3 });
+        const spire = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.6), spireMat);
+        spire.position.set(0, 7.9, 0);
+        spire.castShadow = true;
+        pagodaGroup.add(spire);
+
+        // small decorative voxels around tiers (lanterns)
+        const lanternMat = new THREE.MeshStandardMaterial({ color: 0xffcc66, emissive: 0xff8800, emissiveIntensity: 0.5 });
+        const lanternPos = [[1.8, 1.8, 1.8], [-1.8, 1.8, 1.8], [1.8, 1.8, -1.8], [-1.8, 1.8, -1.8]];
+        lanternPos.forEach(p => {
+            const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), lanternMat);
+            lantern.position.set(p[0], p[1], p[2]);
+            lantern.castShadow = true;
+            pagodaGroup.add(lantern);
+        });
+
+        scene.add(pagodaGroup);
+
+        // ---------- TREES & CHERRY BLOSSOMS ----------
+        function createCherryTree(posX, posZ, size = 1.0, hueVariant = 0) {
+            const treeGroup = new THREE.Group();
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4226, roughness: 0.8 });
+            const trunk = new THREE.Mesh(new THREE.BoxGeometry(0.8 * size, 2.2 * size, 0.8 * size), trunkMat);
+            trunk.position.set(0, 1.1 * size, 0);
+            trunk.castShadow = true;
+            trunk.receiveShadow = true;
+            treeGroup.add(trunk);
+
+            // foliage (pink cherry blossoms) – voxel clusters
+            const foliageMat = new THREE.MeshStandardMaterial({ color: 0xffa6c9, roughness: 0.3, emissive: 0x552233, emissiveIntensity: 0.1 });
+            const darkFoliageMat = new THREE.MeshStandardMaterial({ color: 0xff7ba3, roughness: 0.3 });
+            
+            // main canopy (multiple voxels)
+            const canopyPositions = [
+                [0, 2.4 * size, 0], [0.7 * size, 2.8 * size, 0.2 * size], [-0.7 * size, 2.8 * size, 0.1 * size],
+                [0.2 * size, 2.8 * size, 0.8 * size], [-0.1 * size, 2.8 * size, -0.8 * size],
+                [0.5 * size, 3.2 * size, 0.6 * size], [-0.6 * size, 3.2 * size, -0.5 * size],
+                [0.6 * size, 3.2 * size, -0.5 * size], [-0.5 * size, 3.2 * size, 0.6 * size],
+                [0, 3.6 * size, 0], [0.4 * size, 3.6 * size, 0.4 * size], [-0.4 * size, 3.6 * size, 0.4 * size],
+                [0.4 * size, 3.6 * size, -0.4 * size], [-0.4 * size, 3.6 * size, -0.4 * size],
+                [0, 4.0 * size, 0], [0.3 * size, 4.0 * size, 0.3 * size], [-0.3 * size, 4.0 * size, -0.3 * size]
+            ];
+            canopyPositions.forEach(pos => {
+                const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.7 * size, 0.7 * size, 0.7 * size), foliageMat);
+                leaf.position.set(pos[0], pos[1], pos[2]);
+                leaf.castShadow = true;
+                leaf.receiveShadow = true;
+                treeGroup.add(leaf);
+            });
+
+            // add some darker pink highlights
+            const highlightPos = [[0.2, 3.0, 0.2], [-0.3, 3.0, -0.3], [0.3, 3.4, -0.2], [-0.2, 3.4, 0.3]];
+            highlightPos.forEach(pos => {
+                const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.6 * size, 0.6 * size, 0.6 * size), darkFoliageMat);
+                leaf.position.set(pos[0] * size, pos[1] * size, pos[2] * size);
+                leaf.castShadow = true;
+                treeGroup.add(leaf);
+            });
+
+            // blossom dots (tiny pink voxels)
+            const blossomMat = new THREE.MeshStandardMaterial({ color: 0xffd1e8, emissive: 0xffa0b0, emissiveIntensity: 0.2 });
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2;
+                const radius = 1.0 * size;
+                const bx = Math.cos(angle) * radius;
+                const bz = Math.sin(angle) * radius;
+                const by = 2.6 * size + Math.sin(i * 2) * 0.4;
+                const blossom = new THREE.Mesh(new THREE.BoxGeometry(0.25 * size, 0.25 * size, 0.25 * size), blossomMat);
+                blossom.position.set(bx, by, bz);
+                blossom.castShadow = true;
+                treeGroup.add(blossom);
+            }
+
+            treeGroup.position.set(posX, 0, posZ);
+            return treeGroup;
+        }
+
+        // place trees around the garden
+        const treePositions = [
+            [-4.5, -4.5], [5.5, -3.5], [-3.5, 5.0], [6.0, 4.5], [-6.0, 2.5],
+            [3.0, -6.5], [-5.5, -6.0], [7.0, -1.5], [-7.0, -2.0], [2.0, 6.8],
+            [-2.5, -7.0], [4.8, 6.5], [-6.8, 4.8], [6.8, -5.5], [-4.0, 7.2]
+        ];
+
+        treePositions.forEach(([x, z], idx) => {
+            const size = 0.8 + Math.random() * 0.6;
+            const tree = createCherryTree(x, z, size, idx);
+            scene.add(tree);
+        });
+
+        // add a couple of very large blossom trees near entrance
+        const bigTree1 = createCherryTree(-2.0, -3.8, 1.4);
+        scene.add(bigTree1);
+        const bigTree2 = createCherryTree(2.5, 3.5, 1.5);
+        scene.add(bigTree2);
+
+        // ---------- ADDITIONAL FLOATING CHERRY PETALS (voxel particles) ----------
+        const petalsGroup = new THREE.Group();
+        const petalMat = new THREE.MeshStandardMaterial({ color: 0xffb7c5, emissive: 0xff8fab, emissiveIntensity: 0.3, transparent: true, opacity: 0.8 });
+        for (let i = 0; i < 40; i++) {
+            const petal = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.3), petalMat);
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 4 + Math.random() * 8;
+            petal.position.set(
+                Math.cos(angle) * radius,
+                2 + Math.random() * 7,
+                Math.sin(angle) * radius
+            );
+            petal.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+            petalsGroup.add(petal);
+        }
+        scene.add(petalsGroup);
+
+        // animate petals slowly
+        function animatePetals() {
+            petalsGroup.children.forEach((petal, i) => {
+                petal.position.y += Math.sin(Date.now() * 0.001 + i) * 0.002;
+                petal.rotation.y += 0.005;
+                petal.rotation.x += 0.003;
+            });
+        }
+
+        // ---------- SMALL DETAILS ----------
+        // stone lanterns
+        const lanternBaseMat = new THREE.MeshStandardMaterial({ color: 0x7f8c8d });
+        const lanternLightMat = new THREE.MeshStandardMaterial({ color: 0xffbb66, emissive: 0xff8800, emissiveIntensity: 0.4 });
+        const lanternPositions = [[-2.5, 1.5], [3.0, -2.0], [-3.5, -2.5], [2.5, 2.8]];
+        lanternPositions.forEach(([x, z]) => {
+            const lanternGroup = new THREE.Group();
+            const base = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.8), lanternBaseMat);
+            base.position.set(0, 0.2, 0);
+            base.castShadow = true;
+            lanternGroup.add(base);
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 0.4), lanternBaseMat);
+            pillar.position.set(0, 0.9, 0);
+            pillar.castShadow = true;
+            lanternGroup.add(pillar);
+            const lightBox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.9), lanternLightMat);
+            lightBox.position.set(0, 1.8, 0);
+            lightBox.castShadow = true;
+            lanternGroup.add(lightBox);
+            lanternGroup.position.set(x, 0, z);
+            scene.add(lanternGroup);
+        });
+
+        // ---------- ANIMATION LOOP ----------
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            animatePetals();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

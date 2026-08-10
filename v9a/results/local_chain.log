@@ -1,0 +1,26 @@
+[03:55:08] waiting for MBPP rerun...
+[04:37:11] MBPP rerun done
+pass@1:	0.532
+pass@1:	0.460
+[04:37:11] === benchloop ===
+
+✗ Model 'local-v9a-3090-1m' not found on http://127.0.0.1:8086. Available: /home/awee/models/deepseek-v4-flash/DeepSeek-V4-Flash-0731-TQ3_4S_v9a.gguf
+
+Tips:
+  • Make sure your local LLM server is running:
+      Ollama:    ollama serve
+      LM Studio: launch app, enable local server
+  • Pull a model first, e.g.:
+      ollama pull qwen3:1.7b
+  • If your endpoint isn't Ollama, pass --provider openai_compat
+  • Or launch the dashboard which auto-discovers models:
+      benchloop dashboard
+[04:37:11] === decode speed ===
+DECODE: 2839 tok in 200.1s = 14.19 tok/s
+[04:40:31] === restarting server with --reasoning-budget 81920 ===
+[04:40:39] waiting for server ready...
+[04:40:49] server up (budget 81920)
+[04:40:49] === GARDEN PROMPT (budget 81920) ===
+[04:40:49] using prompt: /home/awee/3.8max/gardenprompt.md
+GARDEN FAILED: HTTPError: HTTP Error 503: Service Unavailable
+[04:40:49] CHAIN_DONE

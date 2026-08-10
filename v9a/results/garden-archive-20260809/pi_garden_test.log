@@ -1,0 +1,24 @@
+All checks pass — the scene builds correctly. The file is complete and verified:
+
+**`/home/awee/3.8max/voxel-pagoda.html`** — a single self-contained HTML file (~29KB) that you can open directly in a browser (it loads Three.js from a CDN).
+
+What's inside:
+
+**The scene:**
+- **Five-tiered pagoda** with a stone platform, cream walls with red corner pillars and door, curved layered roofs with raised gold-tipped corners, a central spire with golden rings and crown — all built voxel-by-voxel
+- **A Japanese garden** with a winding path, a red torii gate, stone lanterns, a pond with lily pads, a wooden bridge with railings, and cobblestone rims
+- **Trees**: cherry blossoms (with fallen petals on the grass), pines, and maples
+- **Details**: scattered flowers, bushes, stones, and a golden-hour sky with sun and clouds
+
+**The technique:**
+- A 110×110×60 voxel grid stored in typed arrays
+- Faces are emitted only where voxels meet air/water, with per-corner fake ambient occlusion — this gives clean, crisp voxel edges with no z-fighting
+- Per-voxel color variation adds natural texture
+- Transparent water rendered as a separate mesh
+- Real-time shadows, fog, and a gradient sky dome
+
+**Animation:**
+- 160 cherry blossom petals drift and spin down through the scene
+- Birds circle the pagoda
+- Fireflies pulse and bob around the garden
+- The camera auto-rotates — drag to orbit, scroll to zoom

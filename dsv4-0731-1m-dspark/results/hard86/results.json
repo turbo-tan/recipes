@@ -1,0 +1,230 @@
+{
+  "model": "deepseek-v4-flash-0731",
+  "endpoint": "http://127.0.0.1:8888/v1/chat/completions",
+  "passed": 71,
+  "total": 86,
+  "pass_rate": 0.826,
+  "compile_failures": 0,
+  "total_time_s": 78.4,
+  "tasks": [
+    {
+      "name": "edit_distance_ops",
+      "passed": 5,
+      "total": 5,
+      "compile_ok": true,
+      "tps": 16.0,
+      "gen_time": 9.8,
+      "errors": [],
+      "code_len": 1037
+    },
+    {
+      "name": "json_patch_apply",
+      "passed": 6,
+      "total": 6,
+      "compile_ok": true,
+      "tps": 16.5,
+      "gen_time": 11.1,
+      "errors": [],
+      "code_len": 1785
+    },
+    {
+      "name": "async_rate_limiter",
+      "passed": 2,
+      "total": 2,
+      "compile_ok": true,
+      "tps": 28.7,
+      "gen_time": 2.5,
+      "errors": [],
+      "code_len": 773
+    },
+    {
+      "name": "topological_batches",
+      "passed": 4,
+      "total": 4,
+      "compile_ok": true,
+      "tps": 31.6,
+      "gen_time": 3.9,
+      "errors": [],
+      "code_len": 1114
+    },
+    {
+      "name": "interval_set",
+      "passed": 6,
+      "total": 6,
+      "compile_ok": true,
+      "tps": 33.4,
+      "gen_time": 3.9,
+      "errors": [],
+      "code_len": 1270
+    },
+    {
+      "name": "mini_sql_where",
+      "passed": 3,
+      "total": 4,
+      "compile_ok": true,
+      "tps": 28.3,
+      "gen_time": 8.8,
+      "errors": [
+        "[r['name'] for r in filter_rows(_ROWS, \"age != 36 AND age >= 29\")] => ['Bob', 'Cara'], want ['Bob']"
+      ],
+      "code_len": 2875
+    },
+    {
+      "name": "markdown_table_parser",
+      "passed": 0,
+      "total": 3,
+      "compile_ok": true,
+      "tps": 25.9,
+      "gen_time": 2.5,
+      "errors": [
+        "parse_markdown_table('| name | age |\\n|---|---:|\\n| Ada | 36 |\\n| Bob | 41 |') => NameError: name 're' is not defined",
+        "parse_markdown_table('x\\n| A | B |\\n| :-- | --: |\\n| one | two |\\n') => NameError: name 're' is not defined",
+        "parse_markdown_table('| A |\\n|---|\\n') => NameError: name 're' is not defined"
+      ],
+      "code_len": 630
+    },
+    {
+      "name": "semantic_version_range",
+      "passed": 6,
+      "total": 6,
+      "compile_ok": true,
+      "tps": 37.4,
+      "gen_time": 4.0,
+      "errors": [],
+      "code_len": 1071
+    },
+    {
+      "name": "lru_cache",
+      "passed": 4,
+      "total": 5,
+      "compile_ok": true,
+      "tps": 24.0,
+      "gen_time": 2.4,
+      "errors": [
+        "c=LRUCache(2); c.put(1,1); c.put(2,2); c.put(3,3); c.get(2) => 2, want -1"
+      ],
+      "code_len": 620
+    },
+    {
+      "name": "expression_evaluator",
+      "passed": 6,
+      "total": 6,
+      "compile_ok": true,
+      "tps": 38.0,
+      "gen_time": 4.6,
+      "errors": [],
+      "code_len": 1463
+    },
+    {
+      "name": "retry_decorator",
+      "passed": 3,
+      "total": 3,
+      "compile_ok": true,
+      "tps": 27.8,
+      "gen_time": 1.9,
+      "errors": [],
+      "code_len": 589
+    },
+    {
+      "name": "diff_patch",
+      "passed": 0,
+      "total": 4,
+      "compile_ok": true,
+      "tps": 22.2,
+      "gen_time": 1.8,
+      "errors": [
+        "apply_diff(['a','b','c'], compute_diff(['a','b','c'], ['a','x','c'])) => IndexError: list index out of range",
+        "apply_diff([], compute_diff([], ['x','y'])) => ['++ ', 'x', 'y'], want ['x', 'y']",
+        "apply_diff(['a','b'], compute_diff(['a','b'], [])) => ['++ '], want []"
+      ],
+      "code_len": 402
+    },
+    {
+      "name": "event_emitter",
+      "passed": 3,
+      "total": 3,
+      "compile_ok": true,
+      "tps": 24.1,
+      "gen_time": 2.2,
+      "errors": [],
+      "code_len": 694
+    },
+    {
+      "name": "trie",
+      "passed": 5,
+      "total": 5,
+      "compile_ok": true,
+      "tps": 36.5,
+      "gen_time": 3.8,
+      "errors": [],
+      "code_len": 1347
+    },
+    {
+      "name": "pipeline",
+      "passed": 4,
+      "total": 4,
+      "compile_ok": true,
+      "tps": 23.1,
+      "gen_time": 1.1,
+      "errors": [],
+      "code_len": 252
+    },
+    {
+      "name": "rate_limited_queue",
+      "passed": 2,
+      "total": 2,
+      "compile_ok": true,
+      "tps": 23.9,
+      "gen_time": 2.6,
+      "errors": [],
+      "code_len": 779
+    },
+    {
+      "name": "csv_query",
+      "passed": 0,
+      "total": 4,
+      "compile_ok": true,
+      "tps": 30.8,
+      "gen_time": 4.6,
+      "errors": [
+        "CSVQuery('name,age\\nAda,36\\nBob,41\\nCara,29').where('age','<','35').rows() => TypeError: 'list' object is not callable",
+        "[r['name'] for r in CSVQuery('name,age\\nAda,36\\nBob,41').order_by('age',desc=True).rows()] => TypeError: 'list' object is not callable",
+        "CSVQuery('a,b,c\\n1,2,3\\n4,5,6').select('a','c').rows() => TypeError: 'list' object is not callable"
+      ],
+      "code_len": 1229
+    },
+    {
+      "name": "state_machine",
+      "passed": 3,
+      "total": 3,
+      "compile_ok": true,
+      "tps": 25.8,
+      "gen_time": 2.2,
+      "errors": [],
+      "code_len": 659
+    },
+    {
+      "name": "bounded_counter",
+      "passed": 5,
+      "total": 5,
+      "compile_ok": true,
+      "tps": 33.1,
+      "gen_time": 3.3,
+      "errors": [],
+      "code_len": 981
+    },
+    {
+      "name": "flatten_nested",
+      "passed": 4,
+      "total": 6,
+      "compile_ok": true,
+      "tps": 30.1,
+      "gen_time": 1.4,
+      "errors": [
+        "flatten([1,[2,[3]]], depth=1) => [1, [2, [3]]], want [1, 2, [3]]",
+        "flatten([[1,2],[3,[4,5]]], depth=1) => [[1, 2], [3, [4, 5]]], want [1, 2, 3, [4, 5]]"
+      ],
+      "code_len": 256
+    }
+  ]
+}

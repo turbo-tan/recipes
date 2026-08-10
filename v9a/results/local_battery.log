@@ -1,0 +1,76 @@
+HEALTH GATE PASSED
+[18:40:38] === Hard86 (86 tasks, parallel 4, max-tokens 16384, thinking ON, temp 0, TOM) ===
+  [PASS] bounded_counter (33.8s, 2.3 w/s)
+  [4/6] flatten_nested (25.8s, 1.3 w/s)
+
+==================================================
+RESULT: 77/86 (89.5%) | 0 compile fails | 853s
+Saved: /home/awee/code/recipes/v9a/results/local-1m-3090/hard86/results.json
+[18:54:52] === evalplus (HE 164 + MBPP 378, official scorer, thinking ON, temp 0) ===
+ 93%|█████████▎| 350/378 [00:08<00:00, 73.65it/s]
+ 95%|█████████▌| 360/378 [00:08<00:00, 78.70it/s]
+ 98%|█████████▊| 369/378 [00:08<00:00, 74.95it/s]
+100%|█████████▉| 377/378 [00:08<00:00, 76.03it/s]
+100%|██████████| 378/378 [00:08<00:00, 43.25it/s]
+
+
+Done.
+[20:06:38] === benchloop ===
+
+✗ Model 'local-v9a-3090-1m' not found on http://127.0.0.1:8086. Available: 
+
+Tips:
+  • Make sure your local LLM server is running:
+      Ollama:    ollama serve
+      LM Studio: launch app, enable local server
+  • Pull a model first, e.g.:
+      ollama pull qwen3:1.7b
+  • If your endpoint isn't Ollama, pass --provider openai_compat
+  • Or launch the dashboard which auto-discovers models:
+      benchloop dashboard
+[20:06:38] === decode speed (thinking off, single request) ===
+Traceback (most recent call last):
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/urllib/request.py", line 1348, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/http/client.py", line 1323, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/http/client.py", line 1369, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/http/client.py", line 1318, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/http/client.py", line 1078, in _send_output
+    self.send(msg)
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/http/client.py", line 1016, in send
+    self.connect()
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/http/client.py", line 982, in connect
+    self.sock = self._create_connection(
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/socket.py", line 863, in create_connection
+    raise exceptions[0]
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/socket.py", line 848, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<stdin>", line 7, in <module>
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/urllib/request.py", line 216, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/urllib/request.py", line 519, in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/urllib/request.py", line 536, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/urllib/request.py", line 496, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/urllib/request.py", line 1377, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/awee/.hermes/hermes-agent/.hermes-runtime/python/generation-1785226670-3723379-aa85a69b/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/urllib/request.py", line 1351, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error [Errno 111] Connection refused>
+[20:06:38] LOCAL_BATTERY_DONE

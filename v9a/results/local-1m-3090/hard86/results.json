@@ -1,0 +1,224 @@
+{
+  "model": "/home/awee/models/deepseek-v4-flash/DeepSeek-V4-Flash-0731-TQ3_4S_v9a.gguf",
+  "endpoint": "http://127.0.0.1:8086/v1/chat/completions",
+  "passed": 77,
+  "total": 86,
+  "pass_rate": 0.895,
+  "compile_failures": 0,
+  "total_time_s": 851.1,
+  "tasks": [
+    {
+      "name": "edit_distance_ops",
+      "passed": 5,
+      "total": 5,
+      "compile_ok": true,
+      "tps": 2.9,
+      "gen_time": 50.8,
+      "errors": [],
+      "code_len": 1118
+    },
+    {
+      "name": "json_patch_apply",
+      "passed": 6,
+      "total": 6,
+      "compile_ok": true,
+      "tps": 4.0,
+      "gen_time": 60.2,
+      "errors": [],
+      "code_len": 2549
+    },
+    {
+      "name": "async_rate_limiter",
+      "passed": 2,
+      "total": 2,
+      "compile_ok": true,
+      "tps": 3.0,
+      "gen_time": 39.4,
+      "errors": [],
+      "code_len": 1233
+    },
+    {
+      "name": "topological_batches",
+      "passed": 4,
+      "total": 4,
+      "compile_ok": true,
+      "tps": 3.1,
+      "gen_time": 38.3,
+      "errors": [],
+      "code_len": 996
+    },
+    {
+      "name": "interval_set",
+      "passed": 6,
+      "total": 6,
+      "compile_ok": true,
+      "tps": 4.0,
+      "gen_time": 45.8,
+      "errors": [],
+      "code_len": 1638
+    },
+    {
+      "name": "mini_sql_where",
+      "passed": 3,
+      "total": 4,
+      "compile_ok": true,
+      "tps": 5.6,
+      "gen_time": 110.2,
+      "errors": [
+        "[r['name'] for r in filter_rows(_ROWS, \"age != 36 AND age >= 29\")] => ['Bob', 'Cara'], want ['Bob']"
+      ],
+      "code_len": 5546
+    },
+    {
+      "name": "markdown_table_parser",
+      "passed": 2,
+      "total": 3,
+      "compile_ok": true,
+      "tps": 3.6,
+      "gen_time": 39.2,
+      "errors": [
+        "parse_markdown_table('x\\n| A | B |\\n| :-- | --: |\\n| one | two |\\n') => [{'x': ':--'}, {'x': 'one'}], want [{'A': 'one', 'B': 'two'}]"
+      ],
+      "code_len": 1095
+    },
+    {
+      "name": "semantic_version_range",
+      "passed": 6,
+      "total": 6,
+      "compile_ok": true,
+      "tps": 4.0,
+      "gen_time": 44.8,
+      "errors": [],
+      "code_len": 1348
+    },
+    {
+      "name": "lru_cache",
+      "passed": 4,
+      "total": 5,
+      "compile_ok": true,
+      "tps": 1.8,
+      "gen_time": 31.4,
+      "errors": [
+        "c=LRUCache(2); c.put(1,1); c.put(2,2); c.put(3,3); c.get(2) => 2, want -1"
+      ],
+      "code_len": 620
+    },
+    {
+      "name": "expression_evaluator",
+      "passed": 6,
+      "total": 6,
+      "compile_ok": true,
+      "tps": 4.0,
+      "gen_time": 42.9,
+      "errors": [],
+      "code_len": 1494
+    },
+    {
+      "name": "retry_decorator",
+      "passed": 3,
+      "total": 3,
+      "compile_ok": true,
+      "tps": 1.7,
+      "gen_time": 29.2,
+      "errors": [],
+      "code_len": 565
+    },
+    {
+      "name": "diff_patch",
+      "passed": 4,
+      "total": 4,
+      "compile_ok": true,
+      "tps": 2.9,
+      "gen_time": 51.5,
+      "errors": [],
+      "code_len": 1179
+    },
+    {
+      "name": "event_emitter",
+      "passed": 3,
+      "total": 3,
+      "compile_ok": true,
+      "tps": 1.9,
+      "gen_time": 33.0,
+      "errors": [],
+      "code_len": 736
+    },
+    {
+      "name": "trie",
+      "passed": 5,
+      "total": 5,
+      "compile_ok": true,
+      "tps": 3.2,
+      "gen_time": 40.3,
+      "errors": [],
+      "code_len": 1284
+    },
+    {
+      "name": "pipeline",
+      "passed": 4,
+      "total": 4,
+      "compile_ok": true,
+      "tps": 1.5,
+      "gen_time": 28.7,
+      "errors": [],
+      "code_len": 460
+    },
+    {
+      "name": "rate_limited_queue",
+      "passed": 2,
+      "total": 2,
+      "compile_ok": true,
+      "tps": 2.4,
+      "gen_time": 36.4,
+      "errors": [],
+      "code_len": 949
+    },
+    {
+      "name": "csv_query",
+      "passed": 0,
+      "total": 4,
+      "compile_ok": true,
+      "tps": 2.3,
+      "gen_time": 37.5,
+      "errors": [
+        "CSVQuery('name,age\\nAda,36\\nBob,41\\nCara,29').where('age','<','35').rows() => TypeError: 'list' object is not callable",
+        "[r['name'] for r in CSVQuery('name,age\\nAda,36\\nBob,41').order_by('age',desc=True).rows()] => TypeError: 'list' object is not callable",
+        "CSVQuery('a,b,c\\n1,2,3\\n4,5,6').select('a','c').rows() => TypeError: 'list' object is not callable"
+      ],
+      "code_len": 858
+    },
+    {
+      "name": "state_machine",
+      "passed": 3,
+      "total": 3,
+      "compile_ok": true,
+      "tps": 1.8,
+      "gen_time": 31.1,
+      "errors": [],
+      "code_len": 626
+    },
+    {
+      "name": "bounded_counter",
+      "passed": 5,
+      "total": 5,
+      "compile_ok": true,
+      "tps": 2.3,
+      "gen_time": 33.8,
+      "errors": [],
+      "code_len": 736
+    },
+    {
+      "name": "flatten_nested",
+      "passed": 4,
+      "total": 6,
+      "compile_ok": true,
+      "tps": 1.3,
+      "gen_time": 26.5,
+      "errors": [
+        "flatten([1,[2,[3]]], depth=1) => [1, [2, [3]]], want [1, 2, [3]]",
+        "flatten([[1,2],[3,[4,5]]], depth=1) => [[1, 2], [3, [4, 5]]], want [1, 2, 3, [4, 5]]"
+      ],
+      "code_len": 295
+    }
+  ]
+}

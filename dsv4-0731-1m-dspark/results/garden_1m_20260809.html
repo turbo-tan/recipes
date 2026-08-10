@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⛩️ Voxel Pagoda · Cherry Blossom Garden</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0e1a2b;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        #info {
+            position: absolute;
+            bottom: 18px;
+            left: 20px;
+            color: #e6f0e6;
+            background: rgba(10, 20, 30, 0.6);
+            padding: 6px 14px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+            font-size: 14px;
+            letter-spacing: 1px;
+            border: 1px solid #b0d0b0;
+            pointer-events: none;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        #info i {
+            font-style: normal;
+            display: inline-block;
+            animation: gentleFloat 3s infinite ease-in-out;
+        }
+        @keyframes gentleFloat {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+            100% { transform: translateY(0); }
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">🌸⛩️ <i>voxel pagoda · cherry garden</i> 🌸</div>
+
+    <!-- three.js + orbit controls + voxel helpers (no external deps except CDN) -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ---------- SCENE SETUP ----------
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x9ed7e8); // soft sky
+        
+        // subtle fog for depth
+        scene.fog = new THREE.Fog(0x9ed7e8, 60, 150);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(24, 18, 38);
+        camera.lookAt(0, 8, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 8, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.8;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minDistance = 12;
+        controls.maxDistance = 55;
+
+        // ---------- LIGHTING ----------
+        const hemi = new THREE.HemisphereLight(0xfff5d1, 0x8fa88a, 1.1);
+        scene.add(hemi);
+
+        const sunLight = new THREE.DirectionalLight(0xfff0cc, 1.2);
+        sunLight.position.set(18, 30, 10);
+        sunLight.castShadow = true;
+        sunLight.receiveShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        const d = 28;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 50;
+        scene.add(sunLight);
+
+        const fillLight = new THREE.PointLight(0xffddbb, 0.5, 30);
+        fillLight.position.set(-5, 12, 15);
+        scene.add(fillLight);
+
+        // subtle backlight
+        const backLight = new THREE.PointLight(0xbfd9ff, 0.4, 30);
+        backLight.position.set(-8, 8, -15);
+        scene.add(backLight);
+
+        // ---------- VOXEL FACTORY (simple cube with cache-friendly options) ----------
+        const geo = new THREE.BoxGeometry(1, 1, 1);
+        
+        function addVoxel(x, y, z, color, opts = {}) {
+            // basic material, can be overridden by roughness / emissive
+            const mat = new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: opts.roughness ?? 0.6,
+                metalness: opts.metalness ?? 0.1,
+                emissive: opts.emissive ?? 0x000000,
+                emissiveIntensity: opts.emissiveIntensity ?? 0
+            });
+            const cube = new THREE.Mesh(geo, mat);
+            cube.position.set(x, y, z);
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            if (opts.rotation) {
+                cube.rotation.set(opts.rotation.x ?? 0, opts.rotation.y ?? 0, opts.rotation.z ?? 0);
+            }
+            scene.add(cube);
+            return cube;
+        }
+
+        // ---------- GROUND (large voxel style terrain) ----------
+        // base garden floor (slightly varied green)
+        for (let ix = -10; ix <= 10; ix++) {
+            for (let iz = -10; iz <= 10; iz++) {
+                // subtle height variation
+                let h = 0;
+                if (Math.abs(ix) <= 8 && Math.abs(iz) <= 8) h = 0;
+                else if (Math.abs(ix) > 8 || Math.abs(iz) > 8) h = -0.2;
+                // color: patchy grass / earth
+                let col = 0x6da56d;
+                if ((ix + iz) % 3 === 0) col = 0x7cb57c;
+                if ((ix * iz) % 4 === 0) col = 0x589658;
+                if (Math.abs(ix) === 10 || Math.abs(iz) === 10) col = 0x8a7a5a; // path border
+                addVoxel(ix, h - 0.5, iz, col, { roughness: 0.9 });
+            }
+        }
+
+        // add some path / stepping stones near pagoda
+        for (let i = -3; i <= 3; i++) {
+            addVoxel(i, -0.4, 6, 0xbcb0a0, { roughness: 0.8 });
+            addVoxel(i, -0.4, 7, 0xc8bca8, { roughness: 0.8 });
+        }
+
+        // small pond (blue voxels)
+        for (let ix = 6; ix <= 8; ix++) {
+            for (let iz = -7; iz <= -5; iz++) {
+                if (ix === 6 && iz === -5) continue;
+                addVoxel(ix, -0.3, iz, 0x3f7fbf, { roughness: 0.2, metalness: 0.5 });
+            }
+        }
+
+        // ---------- PAGODA (5 tiers, elaborate) ----------
+        // Base / foundation
+        const baseColor = 0xd4b28c;
+        const accentColor = 0xbb9a72;
+        const roofColors = [0x6f4e37, 0x7a5a3a, 0x8b6b4a, 0x9c7b5b, 0xad8b6b]; // wood / roof mix
+        const pillarColor = 0xba8c5a;
+
+        // foundation platform
+        for (let ix = -3; ix <= 3; ix++) {
+            for (let iz = -3; iz <= 3; iz++) {
+                addVoxel(ix, 0, iz, baseColor, { roughness: 0.7 });
+            }
+        }
+        // base step border
+        for (let ix = -4; ix <= 4; ix++) {
+            addVoxel(ix, 0.2, -4, accentColor);
+            addVoxel(ix, 0.2, 4, accentColor);
+        }
+        for (let iz = -4; iz <= 4; iz++) {
+            addVoxel(-4, 0.2, iz, accentColor);
+            addVoxel(4, 0.2, iz, accentColor);
+        }
+
+        // central pillars and core
+        const pillarPos = [
+            [-2, -2], [2, -2], [-2, 2], [2, 2]
+        ];
+        // bottom pillars (tall)
+        for (let p of pillarPos) {
+            for (let y = 1; y <= 3; y++) {
+                addVoxel(p[0], y, p[1], pillarColor, { roughness: 0.8 });
+            }
+        }
+        // core block
+        for (let y = 1; y <= 3; y++) {
+            addVoxel(0, y, 0, 0xcdb38c);
+        }
+
+        // --- TIER 1 (lowest roof) ---
+        // roof rim (eaves)
+        for (let ix = -3; ix <= 3; ix++) {
+            for (let iz = -3; iz <= 3; iz++) {
+                if (Math.abs(ix) === 3 || Math.abs(iz) === 3) {
+                    addVoxel(ix, 3.8, iz, 0x6f4e37, { roughness: 0.5 });
+                }
+            }
+        }
+        // roof fill (upper slope)
+        for (let ix = -2; ix <= 2; ix++) {
+            for (let iz = -2; iz <= 2; iz++) {
+                if (Math.abs(ix) === 2 || Math.abs(iz) === 2) {
+                    addVoxel(ix, 4.0, iz, 0x7a5a3a);
+                }
+            }
+        }
+        for (let ix = -1; ix <= 1; ix++) {
+            for (let iz = -1; iz <= 1; iz++) {
+                addVoxel(ix, 4.2, iz, 0x8b6b4a);
+            }
+        }
+        addVoxel(0, 4.4, 0, 0xad8b6b);
+
+        // --- TIER 2 ---
+        const yBase2 = 4.8;
+        for (let p of pillarPos) {
+            addVoxel(p[0], yBase2, p[1], pillarColor);
+        }
+        addVoxel(0, yBase2, 0, 0xcdb38c);
+        // roof eaves
+        for (let ix = -2; ix <= 2; ix++) {
+            for (let iz = -2; iz <= 2; iz++) {
+                if (Math.abs(ix) === 2 || Math.abs(iz) === 2) {
+                    addVoxel(ix, yBase2+0.6, iz, 0x6f4e37);
+                }
+            }
+        }
+        for (let ix = -1; ix <= 1; ix++) {
+            for (let iz = -1; iz <= 1; iz++) {
+                addVoxel(ix, yBase2+0.8, iz, 0x7a5a3a);
+            }
+        }
+        addVoxel(0, yBase2+1.0, 0, 0xad8b6b);
+
+        // --- TIER 3 ---
+        const yBase3 = 6.2;
+        for (let p of pillarPos) {
+            addVoxel(p[0], yBase3, p[1], pillarColor);
+        }
+        addVoxel(0, yBase3, 0, 0xcdb38c);
+        for (let ix = -2; ix <= 2; ix++) {
+            for (let iz = -2; iz <= 2; iz++) {
+                if (Math.abs(ix) === 2 || Math.abs(iz) === 2) {
+                    addVoxel(ix, yBase3+0.6, iz, 0x6f4e37);
+                }
+            }
+        }
+        for (let ix = -1; ix <= 1; ix++) {
+            for (let iz = -1; iz <= 1; iz++) {
+                addVoxel(ix, yBase3+0.8, iz, 0x7a5a3a);
+            }
+        }
+        addVoxel(0, yBase3+1.0, 0, 0xad8b6b);
+
+        // --- TIER 4 (smaller) ---
+        const yBase4 = 7.8;
+        for (let p of pillarPos) {
+            addVoxel(p[0]*0.8, yBase4, p[1]*0.8, pillarColor);
+        }
+        addVoxel(0, yBase4, 0, 0xcdb38c);
+        for (let ix = -1; ix <= 1; ix++) {
+            for (let iz = -1; iz <= 1; iz++) {
+                if (Math.abs(ix) === 1 || Math.abs(iz) === 1) {
+                    addVoxel(ix, yBase4+0.6, iz, 0x6f4e37);
+                }
+            }
+        }
+        addVoxel(0, yBase4+0.8, 0, 0xad8b6b);
+
+        // --- TIER 5 (top, spire) ---
+        addVoxel(0, 9.0, 0, 0xcdb38c);
+        addVoxel(0, 9.6, 0, 0xad8b6b);
+        addVoxel(0, 10.2, 0, 0x6f4e37);
+        addVoxel(0, 10.8, 0, 0xd4af37, { emissive: 0xd4af37, emissiveIntensity: 0.3 }); // gold tip
+        addVoxel(0, 11.3, 0, 0xd4af37, { emissive: 0xd4af37, emissiveIntensity: 0.4 });
+
+        // decorative lanterns / small voxels at edges (level 1)
+        addVoxel(-3, 1.5, -3, 0xffaa66, { emissive: 0xff6600, emissiveIntensity: 0.3 });
+        addVoxel(3, 1.5, -3, 0xffaa66, { emissive: 0xff6600, emissiveIntensity: 0.3 });
+        addVoxel(-3, 1.5, 3, 0xffaa66, { emissive: 0xff6600, emissiveIntensity: 0.3 });
+        addVoxel(3, 1.5, 3, 0xffaa66, { emissive: 0xff6600, emissiveIntensity: 0.3 });
+
+        // ---------- TREES & CHERRY BLOSSOMS ----------
+        function makeTree(baseX, baseZ, sizeScale = 1.0, blossomColor = 0xffb7c5) {
+            const trunkH = Math.floor(3 * sizeScale);
+            const trunkColor = 0x8b5a3c;
+            // trunk
+            for (let y = 0; y < trunkH; y++) {
+                addVoxel(baseX, y, baseZ, trunkColor, { roughness: 0.9 });
+            }
+            // main foliage (green + cherry)
+            const startY = trunkH - 1;
+            const radius = 2;
+            for (let dy = 0; dy < 3; dy++) {
+                const y = startY + dy;
+                const r = radius - dy;
+                for (let dx = -r; dx <= r; dx++) {
+                    for (let dz = -r; dz <= r; dz++) {
+                        if (dx*dx + dz*dz <= r*r + 0.2) {
+                            // mix: cherry blossoms & leaves
+                            let col = 0x6fa86f; // green
+                            if ((dx + dz + dy) % 3 === 0) col = blossomColor;
+                            if ((dx * dz) % 4 === 0) col = 0xffb0c0;
+                            if (Math.random() > 0.75) col = 0xff99aa;
+                            addVoxel(baseX + dx, y, baseZ + dz, col, { roughness: 0.4 });
+                        }
+                    }
+                }
+            }
+            // top blossoms
+            addVoxel(baseX, startY+3, baseZ, 0xffb7c5);
+            addVoxel(baseX+1, startY+2, baseZ, 0xffa5b0);
+            addVoxel(baseX-1, startY+2, baseZ, 0xffa5b0);
+            addVoxel(baseX, startY+2, baseZ+1, 0xffc0d0);
+            addVoxel(baseX, startY+2, baseZ-1, 0xffc0d0);
+        }
+
+        // place trees around the garden
+        makeTree(-6, -6, 1.2, 0xffb7c5);
+        makeTree(7, -5, 1.0, 0xffa5b0);
+        makeTree(-7, 5, 1.1, 0xffb0c0);
+        makeTree(6, 6, 1.3, 0xffb7c5);
+        makeTree(-4, 7, 1.0, 0xffa0b0);
+        makeTree(8, 1, 1.2, 0xffc0d0);
+        makeTree(-8, -1, 1.1, 0xffb7c5);
+        makeTree(3, -8, 0.9, 0xffb0c0);
+        makeTree(-2, -8, 1.2, 0xffb7c5);
+        makeTree(0, 9, 1.1, 0xffa5b0);
+        makeTree(1, -9, 1.0, 0xffc0d0);
+        makeTree(-9, -3, 1.0, 0xffb7c5);
+
+        // additional small cherry bushes
+        function bush(x, z, col) {
+            addVoxel(x, 0, z, 0x3f7f3f);
+            addVoxel(x+1, 0, z, col);
+            addVoxel(x, 0, z+1, col);
+            addVoxel(x+1, 0, z+1, col);
+            addVoxel(x+1, 1, z, col);
+            addVoxel(x, 1, z+1, col);
+        }
+        bush(-3, -7, 0xffa5b0);
+        bush(5, 3, 0xffb0c0);
+        bush(-6, 2, 0xffb7c5);
+        bush(2, -5, 0xffb7c5);
+
+        // scattered petals on ground (small colored voxels)
+        for (let i = 0; i < 80; i++) {
+            const x = Math.floor(Math.random() * 18 - 9);
+            const z = Math.floor(Math.random() * 18 - 9);
+            if (Math.abs(x) > 9 || Math.abs(z) > 9) continue;
+            if (Math.random() > 0.5) {
+                addVoxel(x, -0.2, z, 0xffa0b0, { roughness: 0.8 });
+            }
+        }
+
+        // some tiny floating particles (fireflies / petals) - static but pretty
+        for (let i = 0; i < 30; i++) {
+            const x = Math.random() * 16 - 8;
+            const y = 2 + Math.random() * 9;
+            const z = Math.random() * 16 - 8;
+            const col = 0xffc0cb;
+            addVoxel(x, y, z, col, { emissive: 0xff88aa, emissiveIntensity: 0.15, roughness: 0.3 });
+        }
+
+        // small fence / stones around pond
+        for (let i = 0; i < 8; i++) {
+            const ang = i / 8 * Math.PI * 2;
+            const x = Math.sin(ang) * 2.2 + 7;
+            const z = Math.cos(ang) * 2.2 - 6;
+            addVoxel(Math.round(x), -0.2, Math.round(z), 0x887766);
+        }
+
+        // ---------- FINAL TOUCHES ----------
+        // little glowing lantern near path
+        addVoxel(-5, 1, 5, 0xffcc66, { emissive: 0xffaa00, emissiveIntensity: 0.6 });
+        addVoxel(-5, 2, 5, 0xffaa33, { emissive: 0xff8800, emissiveIntensity: 0.5 });
+        addVoxel(-5, 0, 5, 0x776655);
+
+        // second lantern
+        addVoxel(6, 1, -3, 0xffcc66, { emissive: 0xffaa00, emissiveIntensity: 0.6 });
+        addVoxel(6, 2, -3, 0xffaa33, { emissive: 0xff8800, emissiveIntensity: 0.5 });
+        addVoxel(6, 0, -3, 0x776655);
+
+        // ---------- ANIMATION LOOP ----------
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // helpful console note
+        console.log('🌸 Voxel Pagoda Garden loaded! Use orbit controls to explore.');
+    </script>
+</body>
+</html>

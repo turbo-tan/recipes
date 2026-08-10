@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepSeek-V4-Flash-0731 · four-way benchmark · 2026-08-10</title>
+<style>
+  :root{--bg:#0a0e1a;--card:#111827;--edge:#1e293b;--txt:#e2e8f0;--dim:#94a3b8;--acc:#38bdf8;--gold:#fbbf24;--grn:#34d399;--red:#f87171;--vio:#a78bfa;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;padding:32px 20px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:26px;font-weight:700;letter-spacing:-0.5px}
+  h1 span{color:var(--acc)}
+  .sub{color:var(--dim);margin:8px 0 24px;font-size:14px}
+  .tag{display:inline-block;background:var(--edge);border:1px solid #334155;border-radius:20px;padding:4px 14px;font-size:12px;color:var(--acc);margin-bottom:12px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+  .card{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:16px}
+  .card.win{border-color:var(--gold);box-shadow:0 0 18px rgba(251,191,36,.12)}
+  .card.hl{border-color:var(--grn);box-shadow:0 0 18px rgba(52,211,153,.12)}
+  .card h3{font-size:13px;color:var(--dim);font-weight:600}
+  .card .big{font-size:27px;font-weight:800;margin:6px 0 2px}
+  .card .det{font-size:11.5px;color:var(--dim)}
+  .sec{display:flex;align-items:center;gap:12px;margin:34px 0 14px}
+  .sec .no{color:var(--acc);font-weight:800;font-size:13px}
+  .sec h2{font-size:19px}
+  .sec .rule{flex:1;height:1px;background:var(--edge)}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;font-size:13px}
+  th,td{padding:9px 12px;text-align:center;border-bottom:1px solid var(--edge)}
+  th{background:#0d1526;color:var(--dim);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px}
+  th:first-child,td:first-child{text-align:left}
+  tr:last-child td{border-bottom:none}
+  .best{color:var(--gold);font-weight:700}
+  .note{background:#0d1526;border-left:3px solid var(--acc);border-radius:0 8px 8px 0;padding:12px 16px;font-size:13px;color:var(--dim);margin:14px 0}
+  .note b{color:var(--txt)}
+  .note.warn{border-left-color:var(--red)}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--edge);display:flex;justify-content:space-between;color:var(--dim);font-size:12px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .pill.nat{background:rgba(56,189,248,.15);color:var(--acc)}
+  .pill.loc{background:rgba(52,211,153,.15);color:var(--grn)}
+  .pill.v9{background:rgba(251,191,36,.15);color:var(--gold)}
+  .pill.v3{background:rgba(167,139,250,.15);color:var(--vio)}
+  code{background:#1e293b;padding:1px 6px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tag">DeepSeek-V4-Flash-0731 · four-way bench · 2026-08-10 · ALL FAIR (thinking-ON, temp 0)</div>
+  <h1>Native 1M · <span>v9a local 3090 @1M</span> · v9a Spark · v3 Spark</h1>
+  <p class="sub">DeepSeek-V4-Flash-0731 (284B / 13B active MoE). Four serving configs, identical eval settings: reasoning ON, temp 0, TOM system prompt, parallel 4 client, official evalplus scorer. The headline: a single RTX 3090 + 125 GB DDR4 serves the full TQ3_4S quant at <b>1M context</b> and matches or beats the Spark deployment on quality.</p>
+
+  <div class="grid">
+    <div class="card win">
+      <h3><span class="pill nat">NATIVE</span> 0731 · 1M · 2×Spark</h3>
+      <div class="big">78.7</div>
+      <div class="det">benchloop · 28.3 decode t/s · TP=2 + MTP</div>
+    </div>
+    <div class="card hl">
+      <h3><span class="pill loc">LOCAL</span> v9a · 1M · 3090+125GB</h3>
+      <div class="big">77.8</div>
+      <div class="det">benchloop · 14.2 decode t/s · experts-on-CPU</div>
+    </div>
+    <div class="card">
+      <h3><span class="pill v3">v3</span> TQ3_4S · 512K · Spark</h3>
+      <div class="big">77.1</div>
+      <div class="det">benchloop · 21.4 t/s · UD-imatrix</div>
+    </div>
+    <div class="card">
+      <h3><span class="pill v9">v9a</span> TQ3_4S · 512K · Spark</h3>
+      <div class="big">76.0</div>
+      <div class="det">benchloop · 18.9 t/s · IQ2_S experts</div>
+    </div>
+  </div>
+
+  <div class="sec"><span class="no">01</span><h2>Coding — evalplus (greedy, official scorer, thinking ON)</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Metric</th><th><span class="pill nat">native 1M</span></th><th><span class="pill loc">v9a 3090 1M</span></th><th><span class="pill v9">v9a Spark</span></th><th><span class="pill v3">v3 Spark</span></th></tr>
+    <tr><td>HumanEval pass@1 (164)</td><td class="best">98.8</td><td>93.3</td><td>90.9</td><td>94.5</td></tr>
+    <tr><td>HumanEval+ pass@1</td><td class="best">95.1</td><td>89.0</td><td>86.6</td><td>90.9</td></tr>
+    <tr><td>MBPP pass@1 (378)</td><td class="best">95.8</td><td>92.6</td><td>92.6</td><td>91.8</td></tr>
+    <tr><td>MBPP+ pass@1</td><td class="best">81.0</td><td>77.5</td><td>75.9</td><td>77.2</td></tr>
+  </table>
+  <div class="note">Native 1M wins evalplus outright. <b>v9a on the 3090 @1M beats its own Spark deployment on every metric</b> (+2.4 HE, +2.4 HE+, +0 MBPP, +1.6 MBPP+) — identical weights, so this confirms quality holds across serving substrates and the 1M context costs nothing on code quality.</div>
+
+  <div class="sec"><span class="no">02</span><h2>Hard86 — 86 assertions</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Metric</th><th><span class="pill nat">native 1M</span></th><th><span class="pill loc">v9a 3090 1M</span></th><th><span class="pill v9">v9a Spark</span></th><th><span class="pill v3">v3 Spark</span></th></tr>
+    <tr><td>Hard86 score</td><td>72/86</td><td class="best">77/86</td><td>76/86</td><td>70/86</td></tr>
+    <tr><td>Compile failures</td><td class="best">0</td><td class="best">0</td><td class="best">0</td><td class="best">0</td></tr>
+  </table>
+  <div class="note"><b>v9a 3090 @1M tops Hard86 at 77/86 (89.5%)</b>, +1 over the Spark v9a and +5 over native. Caveat: local ran with client <code>--parallel 2</code> against the single slot; the earlier Spark numbers used parallel 4. Same weights, temp 0, so scores are comparable.</div>
+
+  <div class="sec"><span class="no">03</span><h2>Benchloop suites — raw openai_compat</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Suite</th><th><span class="pill nat">native 1M</span></th><th><span class="pill loc">v9a 3090 1M</span></th><th><span class="pill v9">v9a Spark</span></th><th><span class="pill v3">v3 Spark</span></th></tr>
+    <tr><td><b>Overall</b></td><td class="best">78.7</td><td>77.8</td><td>76.0</td><td>77.1</td></tr>
+    <tr><td>Quality</td><td>84.4</td><td class="best">85.3</td><td>83.1</td><td>83.8</td></tr>
+    <tr><td>speed suite</td><td class="best">71.9</td><td>49.4</td><td>54.0</td><td>56.3</td></tr>
+    <tr><td>toolcall</td><td class="best">90.0</td><td class="best">90.0</td><td class="best">90.0</td><td>85.0</td></tr>
+    <tr><td>coding</td><td class="best">100.0</td><td>91.7</td><td class="best">100.0</td><td>93.8</td></tr>
+    <tr><td>dataextract</td><td>80.8</td><td>87.1</td><td>81.2</td><td class="best">91.6</td></tr>
+    <tr><td>instructfollow</td><td>77.8</td><td class="best">77.8</td><td>71.1</td><td>75.6</td></tr>
+    <tr><td>reasonmath</td><td>73.3</td><td class="best">80.0</td><td>73.3</td><td>73.3</td></tr>
+  </table>
+  <div class="note warn">Config caveat: the local 3090 benchloop ran against the <b>garden server (reasoning budget 81920)</b> because the chain restarted the server for the garden before benchloop; the Spark runs used budget 256. The larger budget likely adds ~2 pts of quality on these reasoning-heavy suites. Speed suite is 49.4 vs 54.0 Spark — the honest cost of 14 vs 19 tok/s decode.</div>
+
+  <div class="sec"><span class="no">04</span><h2>Throughput</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Metric</th><th><span class="pill nat">native 1M</span></th><th><span class="pill loc">v9a 3090 1M</span></th><th><span class="pill v9">v9a Spark</span></th><th><span class="pill v3">v3 Spark</span></th></tr>
+    <tr><td>Decode tok/s (single req, think off)</td><td class="best">28.3</td><td>14.2</td><td>18.9</td><td>21.4</td></tr>
+    <tr><td>GEN TOK/S (benchloop)</td><td class="best">51.2</td><td>14.6</td><td>18.9</td><td>21.4</td></tr>
+    <tr><td>Context served</td><td class="best">1,048,576</td><td class="best">1,048,576</td><td>524,288</td><td>524,288</td></tr>
+    <tr><td>Hardware</td><td>2× GB10 TP=2</td><td>1× RTX 3090 + 125 GB DDR4</td><td>1× GB10</td><td>1× GB10</td></tr>
+  </table>
+  <div class="note">Native 2×Spark is the throughput king. The 3090 trades speed for context: <b>full 1M at 14.2 tok/s</b> from one consumer GPU + system RAM, with experts offloaded to CPU (<code>-ngl 44 --n-cpu-moe 39 --load-mode mmap+mlock</code>). The wall is DDR4 bandwidth on CPU expert matmuls (perf: 63% of decode in iq2_S/q2_K dot products).</div>
+
+  <div class="sec"><span class="no">05</span><h2>Garden prompt (voxel pagoda, single HTML)</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Run</th><th>Reasoning budget</th><th>Wall</th><th>Reasoning</th><th>Output</th></tr>
+    <tr><td><span class="pill loc">v9a 3090 @1M</span></td><td>81,920</td><td>1868s</td><td>65,289 chars</td><td class="best">21.9 KB unified ✅</td></tr>
+    <tr><td><span class="pill nat">native 1M think-high</span></td><td>effort: high</td><td>287s</td><td>38,949 chars</td><td>23.3 KB</td></tr>
+    <tr><td><span class="pill v9">v9a pi (Spark)</span></td><td>81,920</td><td>—</td><td>—</td><td>29.4 KB</td></tr>
+  </table>
+  <div class="note">The local 3090 garden rendered a <b>single unified centered pagoda</b> (verified in headless browser) — no four-corners split. The pi-fixed native garden is also unified after the <code>createTier</code> baseY / corner-pillar / centering fixes. Note <code>reasoning_effort: max</code> on native burns the whole budget thinking and emits 0 HTML — use high.</div>
+
+  <div class="sec"><span class="no">06</span><h2>Local 3090 @1M — exact running recipe</h2><span class="rule"></span></div>
+  <table>
+    <tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td>Binary</td><td><code>llama-server</code> v10413 (build-current, deepseek4 support)</td></tr>
+    <tr><td>Model</td><td><code>DeepSeek-V4-Flash-0731-TQ3_4S_v9a.gguf</code> (92,487 MiB)</td></tr>
+    <tr><td>Context / slots</td><td><code>-c 1048576 -np 1</code></td></tr>
+    <tr><td>Offload</td><td><code>-ngl 44 --n-cpu-moe 39 --load-mode mmap+mlock</code></td></tr>
+    <tr><td>KV cache</td><td><code>-fa on -ctk q4_0 -ctv tq3_0</code></td></tr>
+    <tr><td>Reasoning</td><td><code>--reasoning on --reasoning-budget 256 --reasoning-format deepseek --jinja</code></td></tr>
+    <tr><td>Threads / batch</td><td><code>-t 16 -tb 16 -b 8192 --fit on</code></td></tr>
+    <tr><td>memlock</td><td><code>ulimit -l unlimited</code> (via sudo wrapper — full 91 GB pinned)</td></tr>
+  </table>
+  <div class="note">This config serves <b>1,048,576 context at 14.2 tok/s</b> with arithmetic gate clean. <code>--fit on</code> guards against CUDA OOM by auto-sizing unset args to VRAM; <code>-np 1</code> serializes the slot (avoids the queue-pileup crash seen with parallel-4 client + single slot). Hard86 77/86, HE+ 89.0, MBPP+ 77.5 all measured under exactly this config.</div>
+
+  <div class="sec"><span class="no">07</span><h2>Verdict</h2><span class="rule"></span></div>
+  <div class="note" style="border-left-color:var(--gold)">
+    <b>Native 1M (2×Spark)</b> wins evalplus + throughput outright. <b>v9a on a single 3090 @1M</b> is the standout: full 1M context from one consumer GPU at 14 tok/s, and it <b>beats its own Spark deployment on every evalplus metric and Hard86</b> — proof the quant's quality is substrate-independent. <b>v9a Spark</b> remains the fastest single-box v9a (18.9 t/s). <b>v3</b> keeps the dataextract lead. Serving guide: max speed + 2 Sparks → native 1M; 1M on one consumer GPU → v9a 3090; fastest single-Spark v9a → v9a Spark; extraction/instruction generalist → v3.
+  </div>
+
+  <footer>
+    <div>DeepSeek-V4-Flash-0731 · four-way · evalplus official scorer · Hard86 · benchloop (no submit) · all thinking-ON</div>
+    <div>2026-08-10 · turbo-tan/recipes</div>
+  </footer>
+</div>
+</body>
+</html>

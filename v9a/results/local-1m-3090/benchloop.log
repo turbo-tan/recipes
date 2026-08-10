@@ -1,0 +1,34 @@
+╔══════════════════════════════════════════════════════╗
+║  ⚡ BENCHLOOP · local LLM benchmarking v0.2.3         ║
+╚══════════════════════════════════════════════════════╝
+
+  ◉ MODEL      
+/home/awee/models/deepseek-v4-flash/DeepSeek-V4-Flash-0731-TQ3_4S_v9a.gguf
+  ◉ HARNESS    raw (openai_compat)
+  ◉ MACHINE    RTX 3090 24GB + 125GB DDR4 (experts-on-CPU)
+  ◉ GEN TOK/S  14.62
+
+
+─── Suite Results ─────────────────────────────────────
+
+  speed             49.4   9/9  10832ms ❌
+  toolcall          90.0 13/15  12681ms ✅
+  coding            91.7 11/12  58785ms ✅
+  dataextract       87.1 13/15  73942ms ✅
+  instructfollow    77.8 10/15  24327ms ⚠️
+  reasonmath        80.0 12/15  18740ms ✅
+
+═══ Summary ═══════════════════════════════════════════
+
+  QUALITY       │  85.3
+  SPEED         │  49.4
+  RELIABILITY   │  84.0
+  VALUE         │  10.5
+  ────────────────────────
+  OVERALL       │  77.8  ⚠️
+
+  Runtime: 5195.9s
+
+Saved results to 
+/home/awee/.bench-loop/runs/20260810-065409-home-awee-models-deepseek-v4-flash-D
+eepSeek-V4-Flash-0731-TQ3_4S_v9a.gguf-local-openai_compat/run.json

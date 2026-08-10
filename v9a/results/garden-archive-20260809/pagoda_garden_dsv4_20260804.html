@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Voxel Pagoda Garden</title>
+<style>
+  html,body{margin:0;overflow:hidden;background:#000;}
+  canvas{display:block;}
+  #info{position:absolute;top:12px;left:12px;color:#fff;font-family:'Segoe UI',sans-serif;font-size:14px;background:rgba(20,30,40,.6);padding:8px 14px;border-radius:8px;text-shadow:1px 1px 2px rgba(0,0,0,.7);pointer-events:none;}
+  #controls{position:absolute;bottom:12px;left:12px;color:#fff;font-family:'Segoe UI',sans-serif;font-size:12px;background:rgba(20,30,40,.6);padding:8px 14px;border-radius:8px;text-shadow:1px 1px 2px rgba(0,0,0,.7);pointer-events:none;}
+  #error{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#f66;font-family:monospace;font-size:14px;background:rgba(0,0,0,.8);padding:12px 18px;border-radius:8px;white-space:pre-wrap;max-width:80vw;}
+</style>
+</head>
+<body>
+<div id="info">🌸 Voxel Pagoda Garden</div>
+<div id="controls">Drag to orbit · Scroll to zoom · auto-rotates</div>
+
+<canvas id="c"></canvas>
+
+<script>
+// ============================================================
+//  SELF-CONTAINED VOXEL RENDERER (raw WebGL, no dependencies)
+// ============================================================
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl', { antialias: true, alpha: false });
+if (!gl) { showError('WebGL not available'); }
+window.onerror = function (msg, src, line) { showError(msg + ' @ ' + (src||'') + ':' + line); };
+
+// -------- tiny matrix math --------
+function mIdentity(){ const m=new Float32Array(16); m[0]=1;m[5]=1;m[10]=1;m[15]=1; return m; }
+function mPerspective(fovy,aspect,near,far){
+  const f=1/Math.tan(fovy/2), nf=1/(near-far), m=new Float32Array(16);
+  m[0]=f/aspect; m[5]=f; m[10]=(far+near)*nf; m[11]=-1; m[14]=2*far*near*nf; return m;
+}
+function mLookAt(eye,c,up){
+  const zx=eye[0]-c[0],zy=eye[1]-c[1],zz=eye[2]-c[2];
+  let l=Math.sqrt(zx*zx+zy*zy+zz*zz); zx/=l;zy/=l;zz/=l;
+  let xx=up[1]*zz-up[2]*zy, xy=up[2]*zx-up[0]*zz, xz=up[0]*zy-up[1]*zx;
+  l=Math.sqrt(xx*xx+xy*xy+xz*xz); if(l){xx/=l;xy/=l;xz/=l;}
+  const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
+  const m=mIdentity();
+  m[0]=xx;m[1]=yx;m[2]=zx;m[3]=0;
+  m[4]=xy;m[5]=yy;m[6]=zy;m[7]=0;
+  m[8]=xz;m[9]=yz;m[10]=zz;m[11]=0;
+  m[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);
+  m[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);
+  m[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);
+  m[15]=1;
+  return m;
+}
+function mMul(a,b){ const m=new Float32Array(16);
+  for(let c=0;c<4;c++)for(let r=0;r<4;r++){
+    m[c*4+r]=a[0*4+r]*b[c*4+0]+a[1*4+r]*b[c*4+1]+a[2*4+r]*b[c*4+2]+a[3*4+r]*b[c*4+3];
+  } return m; }
+
+// -------- shaders --------
+const vs = `
+attribute vec3 aPos; attribute vec3 aNormal; attribute vec3 aColor;
+uniform mat4 uVP;
+varying vec3 vColor; varying vec3 vNormal;
+void main(){ gl_Position = uVP * vec4(aPos,1.0); vColor=aColor; vNormal=aNormal; }`;
+const fs = `
+precision mediump float;
+varying vec3 vColor; varying vec3 vNormal;
+uniform vec3 uLight;
+void main(){
+  vec3 n = normalize(vNormal);
+  float diff = max(dot(n, uLight), 0.0);
+  float amb = 0.55;
+  vec3 c = vColor * (amb + 0.6*diff);
+  gl_FragColor = vec4(c,1.0);
+}`;
+const vsP = `
+attribute vec3 aPos; uniform mat4 uVP; varying float vFade;
+void main(){ vec4 p = uVP*vec4(aPos,1.0); gl_Position=p; gl_PointSize=6.0; vFade=1.0; }`;
+const fsP = `
+precision mediump float; varying float vFade;
+void main(){ vec2 d = gl_PointCoord-0.5; if(d.x*d.x+d.y*d.y>0.25) discard; gl_FragColor=vec4(1.0,0.63,0.78,0.8); }`;
+
+function compile(type,src){
+  const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function prog(vsSrc,fsSrc){
+  const p=gl.createProgram();
+  gl.attachShader(p,compile(gl.VERTEX_SHADER,vsSrc));
+  gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fsSrc));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+
+// -------- voxel grid --------
+const grid = new Map();
+function setV(x,y,z,color){ grid.set(x+","+y+","+z,color); }
+function box(x0,y0,z0,sx,sy,sz,color){
+  for(let x=0;x<sx;x++)for(let y=0;y<sy;y++)for(let z=0;z<sz;z++) setV(x0+x,y0+y,z0+z,color);
+}
+function column(x,z,y0,h,color){ for(let y=0;y<h;y++) setV(x,y0+y,z,color); }
+function blob(cx,cy,cz,r,color){
+  for(let x=-r;x<=r;x++)for(let y=-r;y<=r;y++)for(let z=-r;z<=r;z++)
+    if(Math.sqrt(x*x+y*y+z*z)<=r) setV(cx+x,cy+y,cz+z,color);
+}
+
+// -------- build buffer from grid --------
+function buildBuffer(){
+  const pos=[],nrm=[],col=[],idx=[];
+  for(const key of grid.keys()){
+    const [x,y,z]=key.split(",").map(Number);
+    const cx=x+0.5, cy=y+0.5, cz=z+0.5;
+    const c=grid.get(key);
+    const r=(c>>16&255)/255,g=(c>>8&255)/255,b=(c&255)/255;
+    const x0=cx-0.5,x1=cx+0.5,y0=cy-0.5,y1=cy+0.5,z0=cz-0.5,z1=cz+0.5;
+    const V=[[x1,y1,z1],[x1,y1,z0],[x1,y0,z1],[x1,y0,z0],
+             [x0,y1,z0],[x0,y1,z1],[x0,y0,z0],[x0,y0,z1],
+             [x0,y1,z1],[x1,y1,z1],[x0,y1,z0],[x1,y1,z0],
+             [x0,y0,z0],[x1,y0,z0],[x0,y0,z1],[x1,y0,z1],
+             [x1,y1,z1],[x1,y0,z1],[x0,y1,z1],[x0,y0,z1],
+             [x0,y1,z0],[x0,y0,z0],[x1,y1,z0],[x1,y0,z0]];
+    const N=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+    const shade=[1,0.9,1.15,0.82,1,0.92];
+    const base=pos.length/3;
+    for(let f=0;f<6;f++){
+      const s=shade[f];
+      for(let k=0;k<4;k++){
+        const v=V[f*4+k];
+        pos.push(v[0],v[1],v[2]);
+        nrm.push(N[f][0],N[f][1],N[f][2]);
+        col.push(r*s,g*s,b*s);
+      }
+      idx.push(base+f*4,base+f*4+1,base+f*4+2,base+f*4+2,base+f*4+1,base+f*4+3);
+    }
+  }
+  return {pos,idx};
+}
+
+// -------- scene building --------
+function buildGround(){
+  const S=40;
+  box(-S,0,-S,S*2,3,S*2,0x5a9a4a);
+  box(-S,3,-S,S*2,1,S*2,0x6aa84a);
+  for(let x=-S;x<S;x++)for(let z=-S;z<S;z++){
+    const r=Math.random(); let c=0x6aa84a;
+    if(r<0.18)c=0x5c9a40; else if(r<0.4)c=0x78b858; else if(r<0.5)c=0x4f8a38;
+    setV(x,3,z,c);
+  }
+  // pond
+  for(let x=-18;x<-8;x++)for(let z=16;z<26;z++){ setV(x,3,z,0x3f7fb5); if(Math.random()<0.2)setV(x,4,z,0x7fb8e8); }
+  for(let x=-19;x<-7;x++){ setV(x,3,15,0xbfa06a); setV(x,3,26,0xbfa06a); }
+  for(let z=16;z<26;z++){ setV(-19,3,z,0xbfa06a); setV(-7,3,z,0xbfa06a); }
+  for(const [sx,sz] of [[-15,21],[-12,22],[-9,24]]){ setV(sx,4,sz,0x9a9a8a); setV(sx+1,4,sz,0x8f8f7f); }
+  // path
+  for(let z=-34;z<0;z++) if(Math.random()<0.75){ setV(0,3,z,0x9a8f7a); setV(1,3,z,0x8d8270); }
+}
+
+function buildPagoda(){
+  box(-6,3,-6,12,2,12,0xb8b0a4);
+  box(-5,4,-5,10,1,10,0xcfc8ba);
+  box(-4,5,-4,8,1,8,0xb8b0a4);
+  tier(5,6,0xc75b39);
+  tier(11,5,0xcf6340);
+  tier(16,4,0xd96b45);
+  tier(20,3,0xe2734a);
+  tier(23,2,0xeb7a50);
+  column(0,0,26,2,0xc75b39);
+  setV(0,28,0,0xffd04a); setV(0,27,0,0xffb04a);
+}
+function tier(y,body,color){
+  const half=Math.floor(body/2);
+  box(-half,y,-half,body,2,body,color);
+  for(let x=-1;x<=1;x++)for(let yy=y;yy<y+2;yy++) if(Math.random()<0.75) setV(x,yy,half,0x5a2a1e);
+  const roof=body+2, rh=Math.floor(roof/2);
+  box(-rh,y+2,-rh,roof,1,roof,0x2f6b2f);
+  for(const [tx,tz] of [[-rh,-rh],[rh-1,-rh],[-rh,rh-1],[rh-1,rh-1]]) setV(tx,y+3,tz,0x2f6b2f);
+  for(let x=-rh+1;x<rh-1;x++){ setV(x,y+3,-rh,0x2f6b2f); setV(x,y+3,rh-1,0x2f6b2f); }
+  for(let z=-rh+1;z<rh-1;z++){ setV(-rh,y+3,z,0x2f6b2f); setV(rh-1,y+3,z,0x2f6b2f); }
+}
+
+function buildTrees(){
+  tree(22,-18,0xff9fc4,0x6b4a2f,7,5);
+  tree(-20,-16,0xff9fc4,0x6b4a2f,7,5);
+  tree(26,22,0xffb0cf,0x6b4a2f,7,5);
+  tree(-24,24,0xff9fc4,0x6b4a2f,7,5);
+  pine(30,-26,0x2f7a2f); pine(-28,-24,0x2f8a2f);
+  pine(32,28,0x2f7a2f); pine(-30,27,0x2f8a2f);
+  bush(10,14,0x4a9a4a); bush(-10,18,0x5a8a4a);
+  bush(5,-30,0x4a9a4a); bush(-5,-31,0x5a8a4a); bush(15,30,0x4a9a4a);
+}
+function tree(x,z,y,blossom,trunk,h,r){
+  const th=Math.floor(h*0.5); column(x,z,y,th,trunk);
+  const top=y+th;
+  blob(x,top+1,z,r,blossom);
+  blob(x+2,top+2,z+1,r-1,blossom);
+  blob(x-2,top+2,z-1,r-1,blossom);
+  blob(x+1,top+3,z-2,r-1,blossom);
+  blob(x-1,top+3,z+2,r-1,blossom);
+  blob(x,top+4,z,Math.max(1,r-2),0xffd0df);
+}
+function pine(x,z,y,color){
+  column(x,z,y,2,0x5a3a2a);
+  for(let i=0;i<6;i++) box(x-1,y+2+i,z-1,3,1,3,color);
+  setV(x,y+8,z,color);
+}
+function bush(x,z,y,color){ blob(x,y,z,2,color); }
+
+function buildDecor(){
+  lantern(3,8); lantern(-3,10);
+  flowers(12,-8,0xff5a5a); flowers(-14,-6,0xff8844); flowers(8,26,0xff5a5a);
+}
+function lantern(x,z){
+  const y=3;
+  box(x-1,y,z-1,2,1,2,0x8d8d8d);
+  setV(x,y+1,z,0xaaaaaa); setV(x,y+2,z,0xffb45a); setV(x,y+3,z,0xffd08a);
+}
+function flowers(x,z,y,color){
+  for(let i=0;i<7;i++){
+    const fx=x+Math.floor(Math.random()*3)-1, fz=z+Math.floor(Math.random()*3)-1;
+    setV(fx,y,fz,color);
+  }
+}
+
+// -------- main --------
+function init(){
+  buildGround(); buildPagoda(); buildTrees(); buildDecor();
+  const data=buildBuffer();
+
+  const pProgram=prog(vs,fs);
+  const vbo=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
+  const inter=[]; // interleave: pos,norm,col
+  const n=pos=>[pos[0],pos[1],pos[2]];
+  // Rebuild interleaved from data
+  const floats=[];
+  for(let i=0;i<data.pos.length;i+=3){
+    floats.push(data.pos[i],data.pos[i+1],data.pos[i+2]);
+    // normals not stored separately here; approximate with face normals recomputed is heavy.
+    // We'll use a normal attribute derived per-face in a second pass:
+    // For simplicity, store a default normal and rely on pre-shaded colors.
+    floats.push(0,1,0);
+    floats.push(0,0,0); // color filled below
+  }
+  // We need colors per vertex; easiest: re-derive from a parallel array.
+  // To keep this simple we instead store color separately and use a second attribute.
+}
+// ---- fallback: build with three separate buffers (easier) ----
+function buildAll(){
+  buildGround(); buildPagoda(); buildTrees(); buildDecor();
+  const data=buildBuffer();
+  const posA=new Float32Array(data.pos);
+  const idxA=new Uint32Array(data.idx);
+  // colors & normals: recompute per face by matching vertex order from buildBuffer
+  // We stored col and nrm only inside buildBuffer; modify it to also return them.
+}
+</script>
+</body>
+</html>

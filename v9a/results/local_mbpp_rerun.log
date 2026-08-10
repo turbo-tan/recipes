@@ -1,0 +1,23 @@
+
+=== mbpp ===
+  resuming: 214 valid samples kept
+  378 tasks (164 to run)
+  20/164 (3346s)
+  40/164 (3749s)
+  60/164 (4177s)
+  80/164 (4582s)
+  100/164 (5068s)
+  120/164 (5546s)
+  140/164 (5984s)
+  160/164 (6384s)
+  164/164 (6459s)
+  Wrote /home/awee/code/recipes/v9a/results/local-1m-3090/evalplus/mbpp_samples.jsonl
+  Scoring mbpp...
+Load from previous results from /home/awee/code/recipes/v9a/results/local-1m-3090/evalplus/mbpp_samples_eval_results.json
+mbpp (base tests)
+pass@1:	0.532
+mbpp+ (base + extra tests)
+pass@1:	0.460
+
+
+Done.

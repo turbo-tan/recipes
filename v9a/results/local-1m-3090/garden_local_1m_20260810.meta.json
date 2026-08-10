@@ -1,0 +1,14 @@
+{
+ "model": "v9a TQ3_4S",
+ "endpoint": "local 3090 np=1 1M",
+ "reasoning_budget": 81920,
+ "thinking": "on",
+ "temp": 1.0,
+ "top_p": 0.95,
+ "max_tokens": 65536,
+ "wall_s": 1867.7,
+ "html_chars": 21925,
+ "reasoning_chars": 65289,
+ "completion_tokens": 26414,
+ "date": "20260810"
+}
