@@ -94,7 +94,7 @@
   </table>
   <div class="note"><b>R2_TQ3_4S 3090 @1M tops Hard86 at 77/86 (89.5%)</b>, +1 over the Spark R2 and +5 over native. Caveat: local ran with client <code>--parallel 2</code> against the single slot; the earlier Spark numbers used parallel 4. Same weights, temp 0, so scores are comparable.</div>
 
-  <div class="sec"><span class="no">03</span><h2>Benchloop tasks — raw openai_compat</h2><span class="rule"></span></div>
+  <div class="sec"><span class="no">03</span><h2>task-suite tasks — raw openai_compat</h2><span class="rule"></span></div>
   <table>
     <tr><th>Task</th><th><span class="pill nat">native 1M</span></th><th><span class="pill loc">R2 3090 1M</span></th><th><span class="pill v9">R2 Spark</span></th><th><span class="pill v3">TQ3_4S Spark</span></th></tr>
     <tr><td>coding</td><td class="best">100.0</td><td>91.7</td><td class="best">100.0</td><td>93.8</td></tr>
@@ -104,7 +104,7 @@
     <tr><td>reasonmath</td><td>73.3</td><td class="best">80.0</td><td>73.3</td><td>73.3</td></tr>
     <tr><td>speed suite</td><td class="best">71.9</td><td>49.4</td><td>54.0</td><td>56.3</td></tr>
   </table>
-  <div class="note warn">Config caveat: the local 3090 benchloop ran against the <b>garden server (reasoning budget 81920)</b> because the chain restarted the server before benchloop; the Spark runs used budget 256. The larger budget likely adds ~2 pts on these reasoning-heavy tasks. Speed suite is 49.4 vs 54.0 Spark — the honest cost of 14 vs 19 tok/s decode.</div>
+  <div class="note warn">Config caveat: the local 3090 task-suite ran against the <b>garden server (reasoning budget 81920)</b> because the chain restarted the server before task-suite; the Spark runs used budget 256. The larger budget likely adds ~2 pts on these reasoning-heavy tasks. Speed suite is 49.4 vs 54.0 Spark — the honest cost of 14 vs 19 tok/s decode.</div>
 
   <div class="sec"><span class="no">04</span><h2>Throughput & size</h2><span class="rule"></span></div>
   <table>
@@ -136,7 +136,7 @@
   </div>
 
   <footer>
-    <div>DeepSeek-V4-Flash-0731 · four-way · evalplus official scorer · Hard86 · benchloop tasks (no submit) · all thinking-ON</div>
+    <div>DeepSeek-V4-Flash-0731 · four-way · evalplus official scorer · Hard86 · task-suite tasks (no submit) · all thinking-ON</div>
     <div>2026-08-10 · turbo-tan/recipes</div>
   </footer>
 </div>

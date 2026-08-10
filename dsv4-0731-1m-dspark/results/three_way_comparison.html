@@ -44,23 +44,23 @@
 <div class="wrap">
   <div class="tag">DeepSeek-V4-Flash-0731 · three-way bench · 2026-08-09 · ALL FAIR (thinking-ON)</div>
   <h1>Native <span>1M context</span> vs TQ3_4S v9a vs TQ3_4S v3</h1>
-  <p class="sub">DeepSeek-V4-Flash-0731 (284B / 13B active MoE). Native weights served via vLLM DSpark on 2× DGX Spark at 1M context, against the two TQ3_4S GGUF quants served at 512K on a single Spark. Same client harness throughout (evalplus official scorer, Hard86, benchloop raw openai_compat). All numbers measured with reasoning ON, temp 0, TOM system prompt, parallel 4.</p>
+  <p class="sub">DeepSeek-V4-Flash-0731 (284B / 13B active MoE). Native weights served via vLLM DSpark on 2× DGX Spark at 1M context, against the two TQ3_4S GGUF quants served at 512K on a single Spark. Same client harness throughout (evalplus official scorer, Hard86, task-suite raw openai_compat). All numbers measured with reasoning ON, temp 0, TOM system prompt, parallel 4.</p>
 
   <div class="grid">
     <div class="card win">
       <h3><span class="pill nat">NATIVE</span> 0731 · 1M ctx</h3>
       <div class="big">78.7</div>
-      <div class="det">benchloop overall · 51.2 gen tok/s · 28.3 decode tok/s · 2× Spark TP=2 + MTP spec decode</div>
+      <div class="det">task-suite overall · 51.2 gen tok/s · 28.3 decode tok/s · 2× Spark TP=2 + MTP spec decode</div>
     </div>
     <div class="card">
       <h3><span class="pill v3">v3</span> TQ3_4S · 512K ctx</h3>
       <div class="big">77.1</div>
-      <div class="det">benchloop overall · 21.4 tok/s · 1× Spark · UD-imatrix recipe</div>
+      <div class="det">task-suite overall · 21.4 tok/s · 1× Spark · UD-imatrix recipe</div>
     </div>
     <div class="card">
       <h3><span class="pill v9">v9a</span> TQ3_4S · 512K ctx</h3>
       <div class="big">76.0</div>
-      <div class="det">benchloop overall · 18.8 tok/s · 1× Spark · IQ2_S experts (champion quant)</div>
+      <div class="det">task-suite overall · 18.8 tok/s · 1× Spark · IQ2_S experts (champion quant)</div>
     </div>
   </div>
 
@@ -82,7 +82,7 @@
   </table>
   <div class="note">v9a leads by 4 tasks. Caveat: v9a's recorded 76/86 used the older <b>run_hard86_bench.py</b> harness (max_tokens 5000) while the native fair run used <b>run_hard86_dspark.py</b> (max_tokens 16384). Both temp 0 + TOM. Hard86 is temp&gt;0 scoring with ±3 task run-to-run noise, so the gap is within instrument resolution. A v9a re-run on the identical dspark harness would close this cell.</div>
 
-  <div class="sec"><span class="no">03</span><h2>Benchloop suites — raw openai_compat (thinking ON)</h2><span class="rule"></span></div>
+  <div class="sec"><span class="no">03</span><h2>task-suite suites — raw openai_compat (thinking ON)</h2><span class="rule"></span></div>
   <table>
     <tr><th>Suite</th><th><span class="pill nat">native 1M</span></th><th><span class="pill v9">v9a</span></th><th><span class="pill v3">v3</span></th></tr>
     <tr><td><b>Overall</b></td><td class="best">78.7</td><td>76.0</td><td>77.1</td></tr>
@@ -94,17 +94,17 @@
     <tr><td>instructfollow</td><td class="best">77.8</td><td>71.1</td><td>75.6</td></tr>
     <tr><td>reasonmath</td><td class="best">73.3</td><td class="best">73.3</td><td class="best">73.3</td></tr>
   </table>
-  <div class="note">Native 1M fair benchloop: overall 78.7, reliability 71.6, value 30.9, runtime 910.8s. The speed suite jump (66.5 → 71.9) reflects the thinking-ON re-run. v3 keeps its dataextract lead (91.6 vs 80.8/81.2).</div>
+  <div class="note">Native 1M fair task-suite: overall 78.7, reliability 71.6, value 30.9, runtime 910.8s. The speed suite jump (66.5 → 71.9) reflects the thinking-ON re-run. v3 keeps its dataextract lead (91.6 vs 80.8/81.2).</div>
 
   <div class="sec"><span class="no">04</span><h2>Throughput</h2><span class="rule"></span></div>
   <table>
     <tr><th>Metric</th><th><span class="pill nat">native 1M</span></th><th><span class="pill v9">v9a</span></th><th><span class="pill v3">v3</span></th></tr>
     <tr><td>Decode tok/s (single request, thinking off)</td><td class="best">28.3</td><td>18.8</td><td>21.4</td></tr>
-    <tr><td>GEN TOK/S (benchloop, spec decode)</td><td class="best">51.2</td><td>18.9</td><td>21.4</td></tr>
+    <tr><td>GEN TOK/S (task-suite, spec decode)</td><td class="best">51.2</td><td>18.9</td><td>21.4</td></tr>
     <tr><td>Topology</td><td>2× GB10, TP=2, MTP draft-n=5</td><td>1× GB10</td><td>1× GB10</td></tr>
     <tr><td>Context served</td><td class="best">1,048,576</td><td>524,288</td><td>524,288</td></tr>
   </table>
-  <div class="note">2× Spark + MTP speculative decode gives 51.2 gen tok/s under benchloop (2.4× v3, 2.7× v9a). Raw single-request decode is 28.3 tok/s thinking-off. Native 1M is the only config serving the model's full YaRN 1M window.</div>
+  <div class="note">2× Spark + MTP speculative decode gives 51.2 gen tok/s under task-suite (2.4× v3, 2.7× v9a). Raw single-request decode is 28.3 tok/s thinking-off. Native 1M is the only config serving the model's full YaRN 1M window.</div>
 
   <div class="sec"><span class="no">05</span><h2>Perplexity — wikitext-2 · ctx 512 · 60 chunks</h2><span class="rule"></span></div>
   <table>
@@ -140,7 +140,7 @@
   </div>
 
   <footer>
-    <div>DeepSeek-V4-Flash-0731 · native vs TQ3_4S three-way · evalplus official scorer · Hard86 · benchloop (no submit) · all thinking-ON</div>
+    <div>DeepSeek-V4-Flash-0731 · native vs TQ3_4S three-way · evalplus official scorer · Hard86 · task-suite (no submit) · all thinking-ON</div>
     <div>2026-08-09 · turbo-tan/recipes</div>
   </footer>
 </div>

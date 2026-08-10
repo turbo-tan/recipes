@@ -1,0 +1,39 @@
+
+=== humaneval ===
+  164 tasks (164 to run)
+  20/164 (102s)
+  40/164 (222s)
+  60/164 (320s)
+  80/164 (448s)
+  100/164 (631s)
+  120/164 (823s)
+  140/164 (1295s)
+  160/164 (1432s)
+  164/164 (1502s)
+  Wrote /home/awee/code/ai_workspace/artifacts/evalplus/muse_glimmer_30b_tq3_4s/humaneval_samples.jsonl
+  Scoring humaneval...
+Load from ground-truth from /home/awee/.cache/evalplus/fe585eb4df8c88d844eeb463ea4d0302.pkl
+Reading samples...
+humaneval (base tests)
+pass@1:	0.933
+humaneval+ (base + extra tests)
+pass@1:	0.890
+
+STDERR: |██████▌   | 107/164 [00:01<00:00, 94.09it/s]
+ 73%|███████▎  | 120/164 [00:01<00:00, 101.77it/s]
+ 83%|████████▎ | 136/164 [00:01<00:00, 116.39it/s]
+ 91%|█████████ | 149/164 [00:01<00:00, 119.27it/s]
+ 99%|█████████▉| 162/164 [00:02<00:00, 31.90it/s] 
+100%|██████████| 164/164 [00:03<00:00, 44.91it/s]
+
+
+=== mbpp ===
+  378 tasks (378 to run)
+  20/378 (182s)
+  40/378 (531s)
+  60/378 (783s)
+  80/378 (987s)
+  100/378 (1137s)
+  120/378 (1516s)
+  140/378 (1795s)
+  160/378 (2132s)

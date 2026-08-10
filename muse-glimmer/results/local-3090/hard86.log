@@ -1,0 +1,31 @@
+Hard86 benchmark: 20 tasks to run (0 resumed) against http://127.0.0.1:8086/v1/chat/completions
+Model: muse-glimmer-30b-tq3_4s | temp=0 | max_tokens=16384
+
+  [PASS] edit_distance_ops (25.6s, 9.0 w/s)
+  [PASS] json_patch_apply (16.5s, 21.8 w/s)
+  [0/2] async_rate_limiter (10.5s, 10.8 w/s)
+  [PASS] topological_batches (37.2s, 26.4 w/s)
+  [5/6] interval_set (15.0s, 24.8 w/s)
+  [2/4] mini_sql_where (12.1s, 6.9 w/s)
+  [2/3] markdown_table_parser (5.9s, 16.7 w/s)
+  [5/6] semantic_version_range (11.8s, 21.2 w/s)
+  [4/5] lru_cache (4.3s, 13.4 w/s)
+1
+-10
+  [PASS] expression_evaluator (9.3s, 21.2 w/s)
+  [PASS] retry_decorator (5.4s, 11.7 w/s)
+  [0/4] diff_patch (20.3s, 9.8 w/s)
+  [PASS] event_emitter (4.1s, 14.5 w/s)
+  [PASS] trie (5.9s, 24.0 w/s)
+  [PASS] pipeline (4.2s, 13.4 w/s)
+1
+2
+  [PASS] rate_limited_queue (10.1s, 17.7 w/s)
+  [PASS] csv_query (8.1s, 19.4 w/s)
+  [PASS] state_machine (8.6s, 20.4 w/s)
+  [PASS] bounded_counter (5.3s, 22.2 w/s)
+  [PASS] flatten_nested (40.9s, 2.0 w/s)
+
+==================================================
+RESULT: 74/86 (86.0%) | 1 compile fails | 262s
+Saved: /home/awee/code/ai_workspace/artifacts/hard86/muse_glimmer_30b_tq3_4s/results.json

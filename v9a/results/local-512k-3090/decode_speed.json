@@ -1,0 +1,21 @@
+{
+ "config": "local 3090, R2 v9a, 512K ctx, build-current, no drafter, budget 256",
+ "runs": [
+  {
+   "tokens": 1024,
+   "api_s": 73.8,
+   "decode_tps": 13.87
+  },
+  {
+   "tokens": 1024,
+   "api_s": 72.9,
+   "decode_tps": 14.06
+  },
+  {
+   "tokens": 1024,
+   "api_s": 72.4,
+   "decode_tps": 14.14
+  }
+ ],
+ "avg_decode_tps": 14.02
+}
