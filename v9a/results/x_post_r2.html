@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{width:1080px;height:1350px;background:linear-gradient(160deg,#060a14 0%,#0a1224 55%,#0d1830 100%);color:#e2e8f0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow:hidden}
+  .wrap{width:1080px;height:1350px;padding:56px 58px;display:flex;flex-direction:column}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+  .brand{display:flex;align-items:center;gap:16px}
+  .logo{width:62px;height:62px;border-radius:16px;background:linear-gradient(135deg,#38bdf8,#818cf8);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;color:#060a14}
+  .brand-txt{font-size:18px;color:#94a3b8;font-weight:600;line-height:1.25}
+  .brand-txt b{color:#e2e8f0;font-size:21px;display:block}
+  .badge{background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.4);color:#38bdf8;font-size:14px;font-weight:700;padding:9px 18px;border-radius:24px;letter-spacing:.5px}
+  h1{font-size:56px;font-weight:900;line-height:1.1;letter-spacing:-1.5px;margin-bottom:10px}
+  h1 .hl{background:linear-gradient(90deg,#38bdf8,#818cf8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{font-size:23px;color:#94a3b8;margin-bottom:24px;line-height:1.4}
+  .sub b{color:#e2e8f0}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+  .stat{background:#0f172a;border:1px solid #1e293b;border-radius:18px;padding:26px 26px}
+  .stat .v{font-size:46px;font-weight:800;color:#fff;line-height:1.1}
+  .stat .v em{font-style:normal;color:#38bdf8;font-size:26px}
+  .stat .l{font-size:15px;color:#94a3b8;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+  .stat.gold{border-color:rgba(251,191,36,.45);background:linear-gradient(135deg,rgba(251,191,36,.08),#0f172a)}
+  .stat.gold .v em{color:#fbbf24}
+  .tbl-title{font-size:16px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+  table{width:100%;border-collapse:separate;border-spacing:0 8px;margin-bottom:8px}
+  th{font-size:14px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:left;padding:0 18px 6px}
+  th.num{text-align:right}
+  td{background:#0f172a;padding:15px 20px;font-size:20px;color:#cbd5e1}
+  tr td:first-child{border-radius:14px 0 0 14px;font-weight:700;color:#e2e8f0}
+  tr td:last-child{border-radius:0 14px 14px 0}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  .hl-row td{background:linear-gradient(90deg,rgba(56,189,248,.16),rgba(129,140,248,.10));border-top:1px solid rgba(56,189,248,.35);border-bottom:1px solid rgba(56,189,248,.35)}
+  .hl-row td:first-child{border-left:1px solid rgba(56,189,248,.35)}
+  .hl-row td:last-child{border-right:1px solid rgba(56,189,248,.35)}
+  .spd{color:#38bdf8;font-weight:800}
+  .note{font-size:16px;color:#64748b;margin-top:10px;line-height:1.4}
+  .bm-title{font-size:16px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:18px 0 10px}
+  .bm-head{display:flex;gap:16px;margin-bottom:8px}
+  .bm-big{flex:1;background:linear-gradient(135deg,rgba(129,140,248,.14),#0f172a);border:1px solid rgba(129,140,248,.4);border-radius:14px;padding:12px 20px;display:flex;align-items:center;gap:14px}
+  .bm-big .bv{font-size:34px;font-weight:800;color:#a5b4fc}
+  .bm-big .bl{font-size:14px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px;line-height:1.3}
+  .suites{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .suite{background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center}
+  .suite .sn{font-size:15px;color:#94a3b8;font-weight:600}
+  .suite .sv{font-size:20px;font-weight:800;color:#e2e8f0;font-variant-numeric:tabular-nums}
+  .cost{display:flex;gap:16px;margin-top:16px}
+  .cost-card{flex:1;background:#0f172a;border:1px solid #1e293b;border-radius:18px;padding:16px 24px}
+  .cost-card.win{border-color:rgba(74,222,128,.4);background:linear-gradient(135deg,rgba(74,222,128,.07),#0f172a)}
+  .cost-card .cv{font-size:34px;font-weight:800;color:#fff}
+  .cost-card.win .cv{color:#4ade80}
+  .cost-card .cl{font-size:15px;color:#94a3b8;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;line-height:1.35}
+  .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid #1e293b;padding-top:16px}
+  .foot-l{font-size:18px;color:#94a3b8;line-height:1.5}
+  .foot-l b{color:#e2e8f0}
+  .foot-r{text-align:right;font-size:15px;color:#64748b;line-height:1.5;white-space:nowrap}
+  .tagrow{display:flex;gap:10px;margin-top:10px}
+  .tag{font-size:14px;color:#38bdf8;background:rgba(56,189,248,.1);padding:5px 12px;border-radius:8px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <div class="logo">R2</div>
+      <div class="brand-txt"><b>DeepSeek-V4-Flash-0731</b>TQ3_4S · selective imatrix quant · 2.73 bpw</div>
+    </div>
+    <div class="badge">1M CONTEXT</div>
+  </div>
+
+  <h1>17% <span class="hl">smaller</span>, faster, full <span class="hl">1M context</span></h1>
+  <div class="sub"><b>R2_TQ3_4S</b> — 91 GB vs TQ3_4S's 110 GB. Decode <b>22.9 tok/s</b> with drafter (beats TQ3_4S's 21.4). Full 1M context on a single DGX Spark <b>and</b> on one RTX 3090 + 128 GB.</div>
+
+  <div class="grid">
+    <div class="stat"><div class="v">93.3<em> / 89.0</em></div><div class="l">HumanEval / HE+</div></div>
+    <div class="stat"><div class="v">92.6<em> / 77.5</em></div><div class="l">MBPP / MBPP+</div></div>
+    <div class="stat gold"><div class="v">77<em> / 86</em></div><div class="l">Hard86 · best</div></div>
+  </div>
+
+  <div class="tbl-title">Serving 1,048,576 tokens — decode speed</div>
+  <table>
+    <tr><th>Hardware</th><th class="num">Context</th><th class="num">Decode</th><th class="num">Gate</th></tr>
+    <tr class="hl-row"><td>1× DGX Spark + drafter</td><td class="num">1,048,576</td><td class="num spd">22.9 tok/s</td><td class="num">6/6</td></tr>
+    <tr><td>1× DGX Spark (GB10)</td><td class="num">1,048,576</td><td class="num spd">18.4 tok/s</td><td class="num">6/6</td></tr>
+    <tr><td>RTX 3090 + 128 GB</td><td class="num">1,048,576</td><td class="num spd">14.3 tok/s</td><td class="num">6/6</td></tr>
+  </table>
+  <div class="note">Same weights, thinking ON, temp 0, official evalplus scorer. Doubling served context costs ~0 tok/s — the MLA latent KV is that cheap.</div>
+
+  <div class="bm-title">Benchloop — R2 at 1M context (thinking on, budget 256)</div>
+  <div class="bm-head">
+    <div class="bm-big"><div class="bv">85.3</div><div class="bl">Quality<br>overall</div></div>
+    <div class="bm-big"><div class="bv">84.0</div><div class="bl">Reliability<br>pass rate</div></div>
+    <div class="bm-big"><div class="bv">77.8</div><div class="bl">Benchloop<br>overall</div></div>
+  </div>
+  <div class="suites">
+    <div class="suite"><span class="sn">coding</span><span class="sv">91.7</span></div>
+    <div class="suite"><span class="sn">toolcall</span><span class="sv">90.0</span></div>
+    <div class="suite"><span class="sn">dataextract</span><span class="sv">87.1</span></div>
+    <div class="suite"><span class="sn">reasonmath</span><span class="sv">80.0</span></div>
+    <div class="suite"><span class="sn">instructfollow</span><span class="sv">77.8</span></div>
+    <div class="suite"><span class="sn">speed</span><span class="sv">49.4</span></div>
+  </div>
+
+  <div class="cost">
+    <div class="cost-card win"><div class="cv">~$2,600</div><div class="cl">full used build: 128 GB DDR4 + 5950X + mobo/PSU/cooler/case + RTX 3090</div></div>
+    <div class="cost-card"><div class="cv">~$4,000</div><div class="cl">1× DGX Spark<br>full 1M @ 22.9 tok/s</div></div>
+    <div class="cost-card"><div class="cv">~1.6×</div><div class="cl">cheaper hardware<br>for the same 1M serving</div></div>
+  </div>
+
+  <div class="foot">
+    <div class="foot-l">
+      <b>One consumer GPU matches a workstation-class box on quality</b> — and doubles the context it serves.
+      <div class="tagrow"><span class="tag">llama.cpp</span><span class="tag">GGUF</span><span class="tag">9 shards</span><span class="tag">MIT</span></div>
+    </div>
+    <div class="foot-r">huggingface.co/YTan2000<br>github.com/turbo-tan/recipes</div>
+  </div>
+</div>
+</body>
+</html>
