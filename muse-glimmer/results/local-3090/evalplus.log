@@ -37,3 +37,32 @@ STDERR: |██████▌   | 107/164 [00:01<00:00, 94.09it/s]
   120/378 (1516s)
   140/378 (1795s)
   160/378 (2132s)
+  180/378 (2256s)
+  200/378 (2452s)
+  220/378 (2641s)
+  240/378 (2744s)
+  260/378 (2877s)
+  280/378 (3210s)
+  300/378 (3439s)
+  320/378 (3558s)
+  340/378 (3685s)
+  360/378 (3898s)
+  378/378 (3978s)
+  Wrote /home/awee/code/ai_workspace/artifacts/evalplus/muse_glimmer_30b_tq3_4s/mbpp_samples.jsonl
+  Scoring mbpp...
+Load from ground-truth from /home/awee/.cache/evalplus/ee43ecabebf20deef4bb776a405ac5b1.pkl
+Reading samples...
+mbpp (base tests)
+pass@1:	0.897
+mbpp+ (base + extra tests)
+pass@1:	0.746
+
+STDERR:  88%|████████▊ | 331/378 [00:08<00:00, 77.11it/s]
+ 90%|████████▉ | 339/378 [00:08<00:00, 77.74it/s]
+ 93%|█████████▎| 352/378 [00:08<00:00, 86.42it/s]
+ 96%|█████████▌| 361/378 [00:08<00:00, 75.68it/s]
+ 99%|█████████▊| 373/378 [00:08<00:00, 84.62it/s]
+100%|██████████| 378/378 [00:08<00:00, 42.62it/s]
+
+
+Done.

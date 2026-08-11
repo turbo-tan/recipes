@@ -1,0 +1,33 @@
+╔══════════════════════════════════════════════════════╗
+║  ⚡ BENCHLOOP · local LLM benchmarking v0.2.3         ║
+╚══════════════════════════════════════════════════════╝
+
+  ◉ MODEL      muse-glimmer-30b-tq3_4s
+  ◉ HARNESS    raw (openai_compat)
+  ◉ MACHINE    NVIDIA RTX 3090 24GB
+  ◉ GEN TOK/S  47.92
+
+
+─── Suite Results ─────────────────────────────────────
+
+  speed             70.8   9/9   3510ms ⚠️
+  toolcall          80.0 11/15   2788ms ✅
+  coding            87.5 10/12   6352ms ✅
+  dataextract       82.8  9/15  11008ms ✅
+  instructfollow    96.7 14/15   4018ms ✅
+  reasonmath        80.0 12/15   5682ms ✅
+
+═══ Summary ═══════════════════════════════════════════
+
+  QUALITY       │  85.4
+  SPEED         │  70.8
+  RELIABILITY   │  80.2
+  VALUE         │  32.8
+  ────────────────────────
+  OVERALL       │  81.2  ✅
+
+  Runtime: 782.2s
+
+Saved results to 
+/home/awee/.bench-loop/runs/20260811-010745-muse-glimmer-30b-tq3_4s-local-openai
+_compat/run.json

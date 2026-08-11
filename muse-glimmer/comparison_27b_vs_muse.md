@@ -19,32 +19,32 @@ Nearly identical footprint (14 GiB class), so the comparison is a fair size-clas
 
 ## 2. Coding quality (same harness = comparable)
 
-| Benchmark | Muse 30B | 27B out6k | Notes |
+| Benchmark | Muse 30B TQ3_4S | 27B out6k | Notes |
 |---|---:|---:|---|
-| Hard86 | **74/86** ✅ | **76/86** ✅ | Same script, thinking ON temp 0, TOM system prompt. Muse −2 assertions — effectively neck-and-neck |
-| HumanEval pass@1 | **93.3** ✅ | — | 27B never measured on evalplus |
-| HumanEval+ pass@1 | **89.0** ✅ | — | official evalplus scorer |
-| MBPP pass@1 | ⏳ | — | |
-| MBPP+ pass@1 | ⏳ | — | |
+| Hard86 | 74/86 (86.0%) ✅ | 76/86 (88.4%) ✅ | Same harness. Muse −2 assertions |
+| HumanEval pass@1 | **93.3** ✅ | — (only + recorded) | |
+| HumanEval+ pass@1 | 89.0 ✅ | **92.7** ⚠️ | 27B via vLLM-nvfp4, flagged directional |
+| MBPP pass@1 | **89.7** ✅ | — (only + recorded) | |
+| MBPP+ pass@1 | 74.6 ✅ | **87.8** ⚠️ | 27B via vLLM-nvfp4, flagged directional |
 
-Evalplus gap is real: the 27B line was validated on task-suite + Hard86 only. If the
-comparison needs a 27B evalplus column, that run has to be performed (out6k GGUF is not on
-the local box — it lives on the tc fleet).
+27B source: `ai_workspace/publish/laguna-xs-2.1-tq3_4s/four_way_compare.html` (2026-07-31/08-01).
+Its own footnote: evalplus = greedy pass@1, 27B served via vLLM-nvfp4, marked *directional* —
+different serving stack than the Muse GGUF numbers, so treat deltas as indicative, not final.
 
 ## 3. Task-suite quality (task breakdown only — no overall per publication rules)
 
-| Suite | Muse 30B | 27B out6k (2026-06-05 record) |
+| Suite | Muse 30B | 27B out6k (Jun 13 record) |
 |---|---:|---:|
-| coding | ⏳ | 100.0 |
-| toolcall | ⏳ | 96.7 |
-| dataextract | ⏳ | 89.1 |
-| reasonmath | ⏳ | 73.3 |
-| instructfollow | ⏳ | 68.9 |
-| speed | ⏳ | 67.7 |
+| coding | 87.5 (10/12) | **100.0** (12/12) |
+| toolcall | 80.0 (11/15) | **96.7** (14/15) |
+| dataextract | 82.8 (9/15) | **91.0** (12/15) |
+| reasonmath | **80.0** (12/15) | 73.3 (11/15) |
+| instructfollow | **96.7** (14/15) | 74.5 (9/15) |
+| speed | **70.8** (9/9) | 68.6 |
 
-27B record = run `20260605-215446-qwen36-27b-mtp-tq3_4s-mtp-q4k-publish-full` (GB10,
-openai_compat). Caveat: that run predates the June publish-template fix; the later template
-fix raised instructfollow on other variants, so the 68.9 may understate current out6k.
+Muse config: RTX 3090, DFlash n_max=3, reasoning_strength=low, gen 47.9 tok/s.
+27B record: gated results Jun 13 (recipe doc), publish template, GB10, MTP spec decode,
+gen 42.73 tok/s. Suite definitions identical both sides; hardware/drafter differ.
 
 ## 4. Speed (NOT cross-comparable — listed per-model only)
 
@@ -71,9 +71,15 @@ Not comparable: speed across hardware/drafter; the 27B task-suite record's age/t
 Losslessness note: speculative decoding (DFlash or MTP) does not change output quality —
 quality numbers above are drafter-independent.
 
-## 6. Verdict (to finalize after ⏳ fields land)
+## 6. Verdict
 
-Working draft: Muse-Glimmer-30B TQ3_4S lands within 2 Hard86 assertions of the established
-27B out6k champion and matches our 284B-MoE flagship R2_TQ3_4S exactly on HumanEval/HE+
-(93.3/89.0) — at 14 GiB, with 128K context and vision. Positioning: dense 14 GB-class
-alternative to out6k with vision + longer context, pending task-suite confirmation.
+Muse-Glimmer-30B TQ3_4S is a **different profile, not a replacement** for 27B out6k:
+
+- **Muse wins:** instructfollow 96.7 vs 74.5 (+22), reasonmath 80.0 vs 73.3, speed suite
+  70.8 vs 68.6, and it matches R2_TQ3_4S (284B-MoE) exactly on HumanEval/HE+ (93.3/89.0).
+- **27B out6k wins:** coding 100 vs 87.5, toolcall 96.7 vs 80.0, dataextract 91.0 vs 82.8,
+  HE+ 92.7 vs 89.0, MBPP+ 87.8 vs 74.6 (⚠️ directional vLLM-nvfp4), Hard86 76 vs 74.
+- **Muse-only extras:** vision (mmproj), 128K native context, dense architecture (no MTP head).
+
+Positioning: at the same 14 GiB footprint, Muse is the **instruction-following + reasoning
+generalist with vision and long context**; out6k remains the **coding/agentic specialist**.
