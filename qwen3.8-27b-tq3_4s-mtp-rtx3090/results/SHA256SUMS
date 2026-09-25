@@ -1,0 +1,5 @@
+09bcbcd7d29fd2c468265de1696a7994cf0f4900e680703ed3651df009b374cf  qwen3.8-27b-tq3_4s-mtp-rtx3090/results/mtp-target-cpu-draft-cpu.jsonl
+9a752b3523d6f6d8466121f1f1b9def65f25eaf2fd3e0d465b4820b56e156ba9  qwen3.8-27b-tq3_4s-mtp-rtx3090/results/mtp-target-cpu-draft-gpu.jsonl
+b4207d3aad9dd03fe5311d67ab329f4a622ecc72e633b7740a00edaab49ae432  qwen3.8-27b-tq3_4s-mtp-rtx3090/results/mtp-target-gpu-draft-cpu.jsonl
+a7f2491ac78d3661b3a3303d646b8ffdda8f15fa78622ea9ebc1d20bc248d6fe  qwen3.8-27b-tq3_4s-mtp-rtx3090/results/mtp-target-gpu-draft-gpu.jsonl
+db021cd132df05f51de0940c8a9b24e35972457dddabf81901fd156f4962ee7b  qwen3.8-27b-tq3_4s-mtp-rtx3090/results/target-gpu-nospec.jsonl

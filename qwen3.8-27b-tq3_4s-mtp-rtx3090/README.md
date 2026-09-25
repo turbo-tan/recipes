@@ -1,0 +1,97 @@
+# Qwen3.8 27B TQ3_4S MTP decode recipe for RTX 3090
+
+This recipe selects the fastest validated sampler topology for Qwen3.8 27B
+`TQ3_4S` self-speculative decoding on an RTX 3090:
+
+- target-model sampling on the CPU
+- MTP draft sampling on the GPU
+- TQ3_0 K and V cache
+- three draft tokens
+- 262,144-token server context
+
+Target backend sampling is intentionally disabled. On the tested build, its
+interaction with multi-output speculative verification reduced MTP acceptance,
+made fixed-seed requests variable, and lowered mean decode speed.
+
+## Requirements
+
+- NVIDIA RTX 3090 24 GB
+- CUDA 13.0 build targeting `sm_86`
+- [turbo-tan/llama.cpp-tq3](https://github.com/turbo-tan/llama.cpp-tq3)
+- Qwen3.8 27B GGUF with the bundled NextN/MTP head in `TQ3_4S`
+
+Validated runtime build:
+
+```text
+b11174-97c631472
+97c631472a6f3ecb03a9ef540a705bee33ce252f
+```
+
+## Launch
+
+```bash
+export LLAMA_SERVER_BIN=/path/to/llama-server
+./launch.sh /path/to/Qwen3.8-27B-TQ3_4S.gguf
+```
+
+Equivalent command:
+
+```bash
+llama-server \
+  -m /path/to/Qwen3.8-27B-TQ3_4S.gguf \
+  --host 0.0.0.0 --port 8190 \
+  -c 262144 -np 1 -ngl 99 -fa on --jinja \
+  -ctk tq3_0 -ctv tq3_0 \
+  --spec-type draft-mtp --spec-draft-n-max 3 \
+  --no-backend-sampling \
+  --spec-draft-backend-sampling
+```
+
+Both sampler flags are explicit. `--no-backend-sampling` applies to target-model
+verification. `--spec-draft-backend-sampling` keeps the MTP draft sampler on the
+GPU.
+
+## Measured result
+
+Five requests used the same 22-token prompt, 128 generated tokens,
+`temperature=0`, `seed=42`, disabled prompt caching, and non-streaming output.
+
+| Target sampler | Draft sampler | Decode mean | Steady runs 2-5 | MTP acceptance | Output |
+| --- | --- | ---: | ---: | ---: | --- |
+| CPU | GPU | **49.2539 tok/s** | **49.4503 tok/s** | **375/775 = 48.3871%** | deterministic |
+| CPU | CPU | 46.9474 tok/s | 47.1577 tok/s | 375/775 = 48.3871% | deterministic |
+| GPU | GPU | 46.1680 tok/s | 46.9426 tok/s | 349/843 = 41.3998% | variable |
+| GPU | CPU | 43.8818 tok/s | 45.1931 tok/s | 339/871 = 38.9208% | variable |
+
+Keeping draft sampling on the GPU improved steady decode by 4.86% over CPU/CPU
+without reducing acceptance. Disabling target backend sampling improved mean
+decode by 6.68% over GPU/GPU and restored deterministic output.
+
+A target-GPU control with speculation disabled was deterministic across five
+runs. The observed problem is therefore specific to target backend sampling
+combined with multi-output speculative verification, rather than a general MTP
+head or backend-sampling failure.
+
+Raw samples are stored in [`results/`](results/).
+
+## Smoke test
+
+```bash
+curl -s http://127.0.0.1:8190/completion \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "prompt": "Write a numbered list of practical ways to reduce latency in local language-model inference. Continue until the token limit.",
+    "n_predict": 128,
+    "temperature": 0,
+    "seed": 42,
+    "cache_prompt": false,
+    "stream": false
+  }'
+```
+
+Check `timings.predicted_per_second`, `timings.draft_n`, and
+`timings.draft_n_accepted`. Repeat the request at least five times. Fixed-seed
+output and acceptance should remain stable.
+
+These figures are specific to the listed model, build, GPU, context, and request.
+Re-run the same matrix after changing any of them.
