@@ -9,11 +9,11 @@ fi
 model_path=$1
 server_bin=${LLAMA_SERVER_BIN:-llama-server}
 
-exec "$server_bin" \
+LLAMA_SPEC_CHAIN=1 exec "$server_bin" \
     -m "$model_path" \
     --host 0.0.0.0 \
     --port 8190 \
-    -c 262144 \
+    -c 32768 \
     -np 1 \
     -ngl 99 \
     -fa on \
@@ -21,6 +21,6 @@ exec "$server_bin" \
     -ctk tq3_0 \
     -ctv tq3_0 \
     --spec-type draft-mtp \
-    --spec-draft-n-max 3 \
+    --spec-draft-n-max 2 \
     --no-backend-sampling \
     --spec-draft-backend-sampling

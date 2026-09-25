@@ -1,3 +1,6 @@
+e82b29d036f9f204bd1ec28c7d93a52825b7108debd0185973c5843fc609a9ee  qwen3.8-27b-tq3_4s-mtp-rtx3090/results/fused-chain2-c262-tq3_0.jsonl
+7a20cc8275a4b159023bd9a464587797513cc971d0eac345619f1219acec0c21  qwen3.8-27b-tq3_4s-mtp-rtx3090/results/fused-chain2-c32-tq3_0.jsonl
+f3cd17b270b0e5f931e2e21026c1d58691c5e313820b72b5713248fb0734bcd7  qwen3.8-27b-tq3_4s-mtp-rtx3090/results/fused-chain3-c262-tq3_0.jsonl
 09bcbcd7d29fd2c468265de1696a7994cf0f4900e680703ed3651df009b374cf  qwen3.8-27b-tq3_4s-mtp-rtx3090/results/mtp-target-cpu-draft-cpu.jsonl
 9a752b3523d6f6d8466121f1f1b9def65f25eaf2fd3e0d465b4820b56e156ba9  qwen3.8-27b-tq3_4s-mtp-rtx3090/results/mtp-target-cpu-draft-gpu.jsonl
 b4207d3aad9dd03fe5311d67ab329f4a622ecc72e633b7740a00edaab49ae432  qwen3.8-27b-tq3_4s-mtp-rtx3090/results/mtp-target-gpu-draft-cpu.jsonl

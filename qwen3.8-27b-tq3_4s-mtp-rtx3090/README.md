@@ -6,8 +6,8 @@ This recipe selects the fastest validated sampler topology for Qwen3.8 27B
 - target-model sampling on the CPU
 - MTP draft sampling on the GPU
 - TQ3_0 K and V cache
-- three draft tokens
-- 262,144-token server context
+- fused MTP chain with two draft tokens
+- 32,768-token server context
 
 Target backend sampling is intentionally disabled. On the tested build, its
 interaction with multi-output speculative verification reduced MTP acceptance,
@@ -37,35 +37,39 @@ export LLAMA_SERVER_BIN=/path/to/llama-server
 Equivalent command:
 
 ```bash
-llama-server \
+LLAMA_SPEC_CHAIN=1 llama-server \
   -m /path/to/Qwen3.8-27B-TQ3_4S.gguf \
   --host 0.0.0.0 --port 8190 \
-  -c 262144 -np 1 -ngl 99 -fa on --jinja \
+  -c 32768 -np 1 -ngl 99 -fa on --jinja \
   -ctk tq3_0 -ctv tq3_0 \
-  --spec-type draft-mtp --spec-draft-n-max 3 \
+  --spec-type draft-mtp --spec-draft-n-max 2 \
   --no-backend-sampling \
   --spec-draft-backend-sampling
 ```
 
-Both sampler flags are explicit. `--no-backend-sampling` applies to target-model
+`LLAMA_SPEC_CHAIN=1` enables the fused Qwen MTP chain. Both sampler flags are explicit. `--no-backend-sampling` applies to target-model
 verification. `--spec-draft-backend-sampling` keeps the MTP draft sampler on the
 GPU.
 
 ## Measured result
 
-Five requests used the same 22-token prompt, 128 generated tokens,
+Each configuration used three or five repeated requests with the same 22-token
+prompt, 128 generated tokens,
 `temperature=0`, `seed=42`, disabled prompt caching, and non-streaming output.
 
-| Target sampler | Draft sampler | Decode mean | Steady runs 2-5 | MTP acceptance | Output |
-| --- | --- | ---: | ---: | ---: | --- |
-| CPU | GPU | **49.2539 tok/s** | **49.4503 tok/s** | **375/775 = 48.3871%** | deterministic |
-| CPU | CPU | 46.9474 tok/s | 47.1577 tok/s | 375/775 = 48.3871% | deterministic |
-| GPU | GPU | 46.1680 tok/s | 46.9426 tok/s | 349/843 = 41.3998% | variable |
-| GPU | CPU | 43.8818 tok/s | 45.1931 tok/s | 339/871 = 38.9208% | variable |
+| Configuration | Context | Decode mean | Steady final run | MTP acceptance | Output |
+| --- | ---: | ---: | ---: | ---: | --- |
+| fused chain, depth 2, target CPU / draft GPU | 32K | **57.384 tok/s** | **58.130 tok/s** | **67/116 = 57.76%** | deterministic |
+| fused chain, depth 2, target CPU / draft GPU | 262K | 56.169 tok/s | 57.004 tok/s | 67/116 = 57.76% | deterministic |
+| fused chain, depth 3, target CPU / draft GPU | 262K | 53.516 tok/s | 53.815 tok/s | 76/153 = 49.67% | deterministic |
+| unfused, depth 3, target CPU / draft GPU | 262K | 49.254 tok/s | 49.446 tok/s | 375/775 = 48.39% | deterministic |
+| unfused, depth 3, target GPU / draft GPU | 262K | 46.168 tok/s | 42.288 tok/s | 349/843 = 41.40% | variable |
 
-Keeping draft sampling on the GPU improved steady decode by 4.86% over CPU/CPU
-without reducing acceptance. Disabling target backend sampling improved mean
-decode by 6.68% over GPU/GPU and restored deterministic output.
+The fused two-token chain at 32K improves the prior steady result by 17.56%.
+At 262K it retains nearly all of the gain while preserving the long context.
+Depths 4 and 5 were slower because the extra draft work was not accepted often
+enough. Target sampling remains on the CPU because target backend sampling with
+multi-output verification reduced acceptance and broke fixed-seed determinism.
 
 A target-GPU control with speculation disabled was deterministic across five
 runs. The observed problem is therefore specific to target backend sampling
@@ -90,7 +94,7 @@ curl -s http://127.0.0.1:8190/completion \
 ```
 
 Check `timings.predicted_per_second`, `timings.draft_n`, and
-`timings.draft_n_accepted`. Repeat the request at least five times. Fixed-seed
+`timings.draft_n_accepted`. Repeat the request at least five times for promotion evidence. Fixed-seed
 output and acceptance should remain stable.
 
 These figures are specific to the listed model, build, GPU, context, and request.
