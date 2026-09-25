@@ -1,0 +1,1 @@
+{"label": "FIXED-chain2-tq3kv", "warmup": {"tps": 65.35212659410713, "n": 4096, "prompt": 839, "draft": 3172, "acc": 2508}, "runs": [{"tps": 64.90515605291696, "n": 4096, "prompt": 839, "draft": 3170, "acc": 2509}, {"tps": 65.25971502014733, "n": 4096, "prompt": 839, "draft": 3170, "acc": 2509}], "mean": 65.08, "acceptance": 0.791}

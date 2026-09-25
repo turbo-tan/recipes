@@ -25,7 +25,23 @@ Validated runtime build:
 ```text
 b11174-97c631472
 97c631472a6f3ecb03a9ef540a705bee33ce252f
++ 48a23e089 (turbo-tan/llama.cpp-tq3#89)
 ```
+
+> **Required fix:** plain `97c631472` corrupts memory in flash attention with a
+> quantized KV cache. Prompts longer than ~430 tokens (default `-ub 512`) give
+> garbage output, 0% MTP acceptance, or a crash with `LLAMA_SPEC_CHAIN=1`.
+> The short-prompt numbers below were unaffected, but real workloads need
+> [turbo-tan/llama.cpp-tq3#89](https://github.com/turbo-tan/llama.cpp-tq3/pull/89).
+
+### Long-output result (with the fix)
+
+Chat endpoint, reasoning off, 839-token prompt, 4096 generated tokens,
+`temperature=0`, 1 warmup + 2 measured runs, fused chain depth 2, 32K, TQ3 KV:
+
+| Mean decode | Run 1 | Run 2 | MTP acceptance |
+| ---: | ---: | ---: | ---: |
+| **65.08 tok/s** | 64.91 tok/s | 65.26 tok/s | 5018/6340 = 79.1% |
 
 ## Launch
 
