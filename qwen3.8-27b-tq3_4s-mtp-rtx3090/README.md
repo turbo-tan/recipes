@@ -77,8 +77,16 @@ No separate drafter (built-in MTP head):
 ./launch-mtp.sh models/Qwen3.8-27B-TQ3_4S-v2.gguf
 ```
 
-The 107.9 tok/s MTP run also used a 40,960-token draft-vocabulary map (`DRAFT_VOCAB_MAP=...`), which is not
-shipped here. For MTP, target sampling stays on the CPU (`--no-backend-sampling`): target backend sampling
+The 107.9 tok/s MTP run also used a 40,960-token draft vocabulary, included here as
+[`draft-vocab-40960.txt`](draft-vocab-40960.txt) (from HyperQwen, Apache-2.0; see
+[`draft-vocab-40960.NOTICE`](draft-vocab-40960.NOTICE)):
+
+```bash
+DRAFT_VOCAB_MAP=draft-vocab-40960.txt ./launch-mtp.sh models/Qwen3.8-27B-TQ3_4S-v2.gguf
+```
+
+Use it with MTP only. With the DFlash2 drafter it lowered speed (64K: 77.3 -> 61.7 tok/s), so `launch.sh`
+does not use it. For MTP, target sampling stays on the CPU (`--no-backend-sampling`): target backend sampling
 with multi-output verification lowered acceptance and broke fixed-seed determinism.
 
 ## Benchmark
@@ -90,6 +98,20 @@ python3 card_bench.py 8190 my-run results/my-run.jsonl
 Check `timings.predicted_per_second`, `timings.draft_n` and `timings.draft_n_accepted` in each run. These
 figures are specific to the listed model, drafter, build, GPU, context and request; re-run the protocol
 after changing any of them.
+
+## Credits
+
+- **DFlash / DFlash2** speculative decoding: z-lab,
+  [DFlash: Block Diffusion for Flash Speculative Decoding](https://arxiv.org/abs/2602.06036)
+  ([code](https://github.com/z-lab/dflash), MIT). Drafter weights:
+  [`z-lab/Qwen3.8-27B-DFlash2`](https://huggingface.co/z-lab/Qwen3.8-27B-DFlash2),
+  GGUF: [`z-lab/Qwen3.8-27B-DFlash2-GGUF`](https://huggingface.co/z-lab/Qwen3.8-27B-DFlash2-GGUF) (Apache-2.0).
+- **Draft vocabulary** (`draft-vocab-40960.txt`): [HyperQwen](https://github.com/syv-ai/HyperQwen) by syv-ai,
+  Apache-2.0.
+- **Qwen3.8-27B** and its MTP head: Qwen team. TQ3_4S v2 weights:
+  [`YTan2000/Qwen3.8-27B-TQ3_4S`](https://huggingface.co/YTan2000/Qwen3.8-27B-TQ3_4S).
+- Runtime: [llama.cpp](https://github.com/ggml-org/llama.cpp) via the
+  [turbo-tan/llama.cpp-tq3](https://github.com/turbo-tan/llama.cpp-tq3) fork.
 
 ## Previous results (tq3_0 KV, 32K, before #90)
 
