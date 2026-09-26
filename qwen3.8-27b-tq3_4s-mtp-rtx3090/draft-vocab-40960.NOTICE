@@ -1,0 +1,14 @@
+draft-vocab-40960.txt
+
+The 40,960 token ids in this file are HyperQwen's shipped MTP draft vocabulary
+(prepare/draft_vocab_ids.json) from https://github.com/syv-ai/HyperQwen
+(commit 1cf8665), Copyright the HyperQwen authors, licensed under the
+Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0).
+
+Modification: converted from JSON to llama.cpp's draft-vocab map format
+(header line "llama-mtp-vocab-v1 248320 40960", then one token id per line).
+The ids and their order are unchanged.
+
+Per HyperQwen, the list was counted over Danish web text (fineweb-2), English
+Wikipedia, Python source and the model's own chat outputs (8.8M tokens), with
+95% held-out coverage.
