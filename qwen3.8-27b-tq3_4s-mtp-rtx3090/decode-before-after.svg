@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 450" font-family="Helvetica,Arial,sans-serif">
+<rect width="980" height="450" fill="#ffffff"/>
+<text x="20" y="30" font-size="18" font-weight="bold" fill="#1b1d1c">Qwen3.8-27B TQ3_4S-v2 on one RTX 3090: decode tok/s, before and after</text>
+<text x="540" y="72" font-size="12" font-weight="bold" fill="#1b1d1c">Decode vs context depth</text>
+<text x="20" y="72" font-size="12" font-weight="bold" fill="#1b1d1c">Long-output decode, step by step</text>
+<text x="20" y="50" font-size="12" fill="#55595a">Reasoning off, temperature 0. Left: 839-token prompt, 4096 generated. Right: 512 generated at each context depth.</text>
+<text x="20" y="92" font-size="12" fill="#1b1d1c">MTP chain 2, tq3_0 KV, 32K (previous recipe)</text>
+<rect x="20" y="98" width="195.2" height="22" rx="3" fill="#9aa3ab"/>
+<text x="221.2" y="114" font-size="13" font-weight="bold" fill="#1b1d1c">65.1</text>
+<text x="20" y="154" font-size="12" fill="#1b1d1c">+ decode-once verify, chain 2</text>
+<rect x="20" y="160" width="256.9" height="22" rx="3" fill="#7fa7d6"/>
+<text x="282.9" y="176" font-size="13" font-weight="bold" fill="#1b1d1c">85.7</text>
+<text x="20" y="216" font-size="12" fill="#1b1d1c">+ decode-once verify, chain 3</text>
+<rect x="20" y="222" width="278.3" height="22" rx="3" fill="#5b8fd0"/>
+<text x="304.3" y="238" font-size="13" font-weight="bold" fill="#1b1d1c">92.8</text>
+<text x="20" y="278" font-size="12" fill="#1b1d1c">MTP chain 3, q4_0 KV fused FA, 262K</text>
+<rect x="20" y="284" width="323.7" height="22" rx="3" fill="#2f6fc4"/>
+<text x="349.7" y="300" font-size="13" font-weight="bold" fill="#1b1d1c">107.9</text>
+<text x="20" y="340" font-size="12" fill="#1b1d1c">DFlash2 n=4, q4_0 KV fused FA, 262K</text>
+<rect x="20" y="346" width="375.7" height="22" rx="3" fill="#1b9e6f"/>
+<text x="401.7" y="362" font-size="13" font-weight="bold" fill="#1b1d1c">125.2</text>
+<text x="20" y="402" font-size="11" fill="#8a8f8f">Long output (839 in / 4096 out), mean of 2 runs</text>
+<line x1="540" x2="950" y1="400.0" y2="400.0" stroke="#e3e6e3"/>
+<text x="532" y="404.0" font-size="11" text-anchor="end" fill="#8a8f8f">0</text>
+<line x1="540" x2="950" y1="336.0" y2="336.0" stroke="#e3e6e3"/>
+<text x="532" y="340.0" font-size="11" text-anchor="end" fill="#8a8f8f">20</text>
+<line x1="540" x2="950" y1="272.0" y2="272.0" stroke="#e3e6e3"/>
+<text x="532" y="276.0" font-size="11" text-anchor="end" fill="#8a8f8f">40</text>
+<line x1="540" x2="950" y1="208.0" y2="208.0" stroke="#e3e6e3"/>
+<text x="532" y="212.0" font-size="11" text-anchor="end" fill="#8a8f8f">60</text>
+<line x1="540" x2="950" y1="144.0" y2="144.0" stroke="#e3e6e3"/>
+<text x="532" y="148.0" font-size="11" text-anchor="end" fill="#8a8f8f">80</text>
+<line x1="540" x2="950" y1="80.0" y2="80.0" stroke="#e3e6e3"/>
+<text x="532" y="84.0" font-size="11" text-anchor="end" fill="#8a8f8f">100</text>
+<text x="546.4" y="418" font-size="11" text-anchor="middle" fill="#8a8f8f">4K</text>
+<text x="642.5" y="418" font-size="11" text-anchor="middle" fill="#8a8f8f">64K</text>
+<text x="745.0" y="418" font-size="11" text-anchor="middle" fill="#8a8f8f">128K</text>
+<text x="841.1" y="418" font-size="11" text-anchor="middle" fill="#8a8f8f">188K</text>
+<text x="950.0" y="418" font-size="11" text-anchor="middle" fill="#8a8f8f">256K</text>
+<text x="745.0" y="438" font-size="11" text-anchor="middle" fill="#55595a">context depth (tokens)</text>
+<path d="M546.4,162.2 L591.2,269.8 L642.5,312.6 L735.4,351.0" fill="none" stroke="#9aa3ab" stroke-width="2.5"/>
+<circle cx="546.4" cy="162.2" r="4" fill="#9aa3ab" stroke="#fff" stroke-width="2"/>
+<circle cx="591.2" cy="269.8" r="4" fill="#9aa3ab" stroke="#fff" stroke-width="2"/>
+<circle cx="642.5" cy="312.6" r="4" fill="#9aa3ab" stroke="#fff" stroke-width="2"/>
+<circle cx="735.4" cy="351.0" r="4" fill="#9aa3ab" stroke="#fff" stroke-width="2"/>
+<text x="743.4" y="355.0" font-size="11" font-weight="bold" fill="#1b1d1c">15.3</text>
+<rect x="760" y="296" width="14" height="4" fill="#9aa3ab"/><text x="780" y="302" font-size="11" fill="#1b1d1c">Before: MTP, tq3_0 KV</text>
+<path d="M546.4,111.0 L642.5,156.8 L738.6,186.9 L841.1,210.6" fill="none" stroke="#2f6fc4" stroke-width="2.5"/>
+<circle cx="546.4" cy="111.0" r="4" fill="#2f6fc4" stroke="#fff" stroke-width="2"/>
+<circle cx="642.5" cy="156.8" r="4" fill="#2f6fc4" stroke="#fff" stroke-width="2"/>
+<circle cx="738.6" cy="186.9" r="4" fill="#2f6fc4" stroke="#fff" stroke-width="2"/>
+<circle cx="841.1" cy="210.6" r="4" fill="#2f6fc4" stroke="#fff" stroke-width="2"/>
+<text x="849.1" y="214.6" font-size="11" font-weight="bold" fill="#1b1d1c">59.2</text>
+<rect x="760" y="314" width="14" height="4" fill="#2f6fc4"/><text x="780" y="320" font-size="11" fill="#1b1d1c">After: MTP chain 3, q4_0 KV</text>
+<path d="M546.4,125.4 L642.5,105.3 L738.6,169.3 L841.1,178.6" fill="none" stroke="#1b9e6f" stroke-width="2.5"/>
+<circle cx="546.4" cy="125.4" r="4" fill="#1b9e6f" stroke="#fff" stroke-width="2"/>
+<circle cx="642.5" cy="105.3" r="4" fill="#1b9e6f" stroke="#fff" stroke-width="2"/>
+<circle cx="738.6" cy="169.3" r="4" fill="#1b9e6f" stroke="#fff" stroke-width="2"/>
+<circle cx="841.1" cy="178.6" r="4" fill="#1b9e6f" stroke="#fff" stroke-width="2"/>
+<text x="849.1" y="182.6" font-size="11" font-weight="bold" fill="#1b1d1c">69.2</text>
+<rect x="760" y="332" width="14" height="4" fill="#1b9e6f"/><text x="780" y="338" font-size="11" fill="#1b1d1c">After: DFlash2 n=4, q4_0 KV</text>
+</svg>

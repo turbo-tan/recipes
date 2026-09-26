@@ -1,117 +1,98 @@
-# Qwen3.8 27B TQ3_4S MTP decode recipe for RTX 3090
+# Qwen3.8 27B TQ3_4S (v2) speculative decode recipe for RTX 3090
 
-This recipe selects the fastest validated sampler topology for Qwen3.8 27B
-`TQ3_4S` self-speculative decoding on an RTX 3090:
+**125 tok/s** long-output decode for a 27B model on a single RTX 3090 24 GB, with the full 262K context,
+using the TQ3_4S v2 weights, a DFlash2 drafter and a 4-bit KV cache. Up from 65 tok/s in the previous
+version of this recipe.
 
-- target-model sampling on the CPU
-- MTP draft sampling on the GPU
-- TQ3_0 K and V cache
-- fused MTP chain with two draft tokens
-- 32,768-token server context
+![Decode tok/s before and after](decode-before-after.svg)
 
-Target backend sampling is intentionally disabled. On the tested build, its
-interaction with multi-output speculative verification reduced MTP acceptance,
-made fixed-seed requests variable, and lowered mean decode speed.
+## What changed since the previous recipe
+
+| Step | Change | Long-output decode |
+| --- | --- | ---: |
+| previous recipe | MTP fused chain 2, tq3_0 KV, 32K (llama.cpp-tq3#89) | 65.1 tok/s |
+| 1 | decode-once verify: TQ3_4S / Q6_K weights unpacked once per verify pass, not once per draft token (#90) | 85.7 tok/s |
+| 2 | MTP chain depth 3 (depth 4 is slower: 88.7) | 92.8 tok/s |
+| 3 | q4_0 KV cache with fused-dequant flash attention and GQA packing (#90), 262K context | 107.9 tok/s |
+| 4 | DFlash2 drafter (n=4) instead of the built-in MTP head | **125.2 tok/s** |
+
+Long-output protocol ([`card_bench.py`](card_bench.py)): chat endpoint, reasoning off, 839-token prompt,
+4096 generated tokens, `temperature=0`, 1 warmup + 2 measured runs. Raw runs:
+[`results/card-protocol-2026-09-26.jsonl`](results/card-protocol-2026-09-26.jsonl).
+
+| Config | Mean | Run 1 | Run 2 | Draft acceptance |
+| --- | ---: | ---: | ---: | ---: |
+| **DFlash2 n=4, q4_0 KV, 262K** | **125.23** | 124.97 | 125.49 | 81.2% |
+| MTP chain 3, q4_0 KV, 262K | 107.91 | 107.87 | 107.95 | 76.9% |
+
+### Decode vs context depth
+
+512 generated tokens on a code-refactor prompt at each depth, greedy, reasoning off.
+
+| Context depth | 4K | 64K | 124K | 188K |
+| --- | ---: | ---: | ---: | ---: |
+| **DFlash2 n=4, q4_0 KV** | 85.8 | **92.1** | **72.1** | **69.2** |
+| MTP chain 3, q4_0 KV | **90.3** | 76.0 | 66.6 | 59.2 |
+| Before: MTP, tq3_0 KV* | 74.3 | 27.3 (64K) | 15.3 (122K) | - |
+
+\* The tq3_0 "before" curve was measured on a second RTX 3090 that runs ~3-15% slower; its steep fall
+comes from the tq3_0 KV attention path, which the q4_0 fused path replaces.
+
+With reasoning on, expect lower tok/s on thinking-heavy answers (the drafter accepts fewer tokens).
+Cap thinking with `--reasoning-budget 8192` if you enable it; without a cap a stuck answer can run
+until the context fills.
 
 ## Requirements
 
-- NVIDIA RTX 3090 24 GB
+- NVIDIA RTX 3090 24 GB (uses ~21.4 GB at 262K with the DFlash2 drafter)
 - CUDA 13.0 build targeting `sm_86`
-- [turbo-tan/llama.cpp-tq3](https://github.com/turbo-tan/llama.cpp-tq3)
-- Qwen3.8 27B GGUF with the bundled NextN/MTP head in `TQ3_4S`
+- [turbo-tan/llama.cpp-tq3](https://github.com/turbo-tan/llama.cpp-tq3) `main` at or after `45efd44ec`
+  (includes [#89](https://github.com/turbo-tan/llama.cpp-tq3/pull/89) and
+  [#90](https://github.com/turbo-tan/llama.cpp-tq3/pull/90)). The numbers above were measured on
+  `97c631472` with the #89 + #90 changes applied, before they were merged.
+- Target model, **v2**: [`YTan2000/Qwen3.8-27B-TQ3_4S`](https://huggingface.co/YTan2000/Qwen3.8-27B-TQ3_4S)
+  → `Qwen3.8-27B-TQ3_4S-v2.gguf` (SHA-256 starts `52ef4a8b947aeb9b`)
+- Drafter for `launch.sh`: `Qwen3.8-27B-DFlash2-Q4_K_M.gguf` from
+  [`z-lab/Qwen3.8-27B-DFlash2-GGUF`](https://huggingface.co/z-lab/Qwen3.8-27B-DFlash2-GGUF).
+  Note: the benchmark host used an earlier Q4_K_M build of this drafter (SHA-256 `18a380ef...`); the
+  file currently on Hugging Face is `1a25c568...`. Acceptance, and so tok/s, may differ slightly.
 
-Validated runtime build:
-
-```text
-b11174-97c631472
-97c631472a6f3ecb03a9ef540a705bee33ce252f
-+ 48a23e089 (turbo-tan/llama.cpp-tq3#89)
+```bash
+hf download YTan2000/Qwen3.8-27B-TQ3_4S Qwen3.8-27B-TQ3_4S-v2.gguf --local-dir models
+hf download z-lab/Qwen3.8-27B-DFlash2-GGUF Qwen3.8-27B-DFlash2-Q4_K_M.gguf --local-dir models
 ```
-
-> **Required fix:** plain `97c631472` corrupts memory in flash attention with a
-> quantized KV cache. Prompts longer than ~430 tokens (default `-ub 512`) give
-> garbage output, 0% MTP acceptance, or a crash with `LLAMA_SPEC_CHAIN=1`.
-> The short-prompt numbers below were unaffected, but real workloads need
-> [turbo-tan/llama.cpp-tq3#89](https://github.com/turbo-tan/llama.cpp-tq3/pull/89).
-
-### Long-output result (with the fix)
-
-Chat endpoint, reasoning off, 839-token prompt, 4096 generated tokens,
-`temperature=0`, 1 warmup + 2 measured runs, fused chain depth 2, 32K, TQ3 KV:
-
-| Mean decode | Run 1 | Run 2 | MTP acceptance |
-| ---: | ---: | ---: | ---: |
-| **65.08 tok/s** | 64.91 tok/s | 65.26 tok/s | 5018/6340 = 79.1% |
 
 ## Launch
 
+Fastest (DFlash2 drafter):
+
 ```bash
 export LLAMA_SERVER_BIN=/path/to/llama-server
-./launch.sh /path/to/Qwen3.8-27B-TQ3_4S.gguf
+./launch.sh models/Qwen3.8-27B-TQ3_4S-v2.gguf models/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
 ```
 
-Equivalent command:
+No separate drafter (built-in MTP head):
 
 ```bash
-LLAMA_SPEC_CHAIN=1 llama-server \
-  -m /path/to/Qwen3.8-27B-TQ3_4S.gguf \
-  --host 0.0.0.0 --port 8190 \
-  -c 32768 -np 1 -ngl 99 -fa on --jinja \
-  -ctk tq3_0 -ctv tq3_0 \
-  --spec-type draft-mtp --spec-draft-n-max 2 \
-  --no-backend-sampling \
-  --spec-draft-backend-sampling
+./launch-mtp.sh models/Qwen3.8-27B-TQ3_4S-v2.gguf
 ```
 
-`LLAMA_SPEC_CHAIN=1` enables the fused Qwen MTP chain. Both sampler flags are explicit. `--no-backend-sampling` applies to target-model
-verification. `--spec-draft-backend-sampling` keeps the MTP draft sampler on the
-GPU.
+The 107.9 tok/s MTP run also used a 40,960-token draft-vocabulary map (`DRAFT_VOCAB_MAP=...`), which is not
+shipped here. For MTP, target sampling stays on the CPU (`--no-backend-sampling`): target backend sampling
+with multi-output verification lowered acceptance and broke fixed-seed determinism.
 
-## Measured result
-
-Each configuration used three or five repeated requests with the same 22-token
-prompt, 128 generated tokens,
-`temperature=0`, `seed=42`, disabled prompt caching, and non-streaming output.
-
-| Configuration | Context | Decode mean | Steady final run | MTP acceptance | Output |
-| --- | ---: | ---: | ---: | ---: | --- |
-| fused chain, depth 2, target CPU / draft GPU | 32K | **57.384 tok/s** | **58.130 tok/s** | **67/116 = 57.76%** | deterministic |
-| fused chain, depth 2, target CPU / draft GPU | 262K | 56.169 tok/s | 57.004 tok/s | 67/116 = 57.76% | deterministic |
-| fused chain, depth 3, target CPU / draft GPU | 262K | 53.516 tok/s | 53.815 tok/s | 76/153 = 49.67% | deterministic |
-| unfused, depth 3, target CPU / draft GPU | 262K | 49.254 tok/s | 49.446 tok/s | 375/775 = 48.39% | deterministic |
-| unfused, depth 3, target GPU / draft GPU | 262K | 46.168 tok/s | 42.288 tok/s | 349/843 = 41.40% | variable |
-
-The fused two-token chain at 32K improves the prior steady result by 17.56%.
-At 262K it retains nearly all of the gain while preserving the long context.
-Depths 4 and 5 were slower because the extra draft work was not accepted often
-enough. Target sampling remains on the CPU because target backend sampling with
-multi-output verification reduced acceptance and broke fixed-seed determinism.
-
-A target-GPU control with speculation disabled was deterministic across five
-runs. The observed problem is therefore specific to target backend sampling
-combined with multi-output speculative verification, rather than a general MTP
-head or backend-sampling failure.
-
-Raw samples are stored in [`results/`](results/).
-
-## Smoke test
+## Benchmark
 
 ```bash
-curl -s http://127.0.0.1:8190/completion \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "prompt": "Write a numbered list of practical ways to reduce latency in local language-model inference. Continue until the token limit.",
-    "n_predict": 128,
-    "temperature": 0,
-    "seed": 42,
-    "cache_prompt": false,
-    "stream": false
-  }'
+python3 card_bench.py 8190 my-run results/my-run.jsonl
 ```
 
-Check `timings.predicted_per_second`, `timings.draft_n`, and
-`timings.draft_n_accepted`. Repeat the request at least five times for promotion evidence. Fixed-seed
-output and acceptance should remain stable.
+Check `timings.predicted_per_second`, `timings.draft_n` and `timings.draft_n_accepted` in each run. These
+figures are specific to the listed model, drafter, build, GPU, context and request; re-run the protocol
+after changing any of them.
 
-These figures are specific to the listed model, build, GPU, context, and request.
-Re-run the same matrix after changing any of them.
+## Previous results (tq3_0 KV, 32K, before #90)
+
+Earlier short-prompt matrix (22-token prompt, 128 tokens) for the MTP sampler topologies is kept in
+[`results/`](results/): fused chain depth 2 with target sampling on the CPU and draft sampling on the GPU
+was fastest at 57.4 tok/s (32K) and 56.2 tok/s (262K).
